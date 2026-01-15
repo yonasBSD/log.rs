@@ -31,6 +31,8 @@ pub fn log() -> &'static Arc<dyn ScreenLogger + Send + Sync> {
 }
 
 pub fn init() {
+    env_rs.init()?;
+
     // 1. Define the formatted output (The Layer)
     let telemetry_fmt = tracing_subscriber::fmt::layer()
         .with_ansi(true)

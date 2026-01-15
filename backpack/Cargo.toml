@@ -10,6 +10,7 @@ keywords = ["logging", "logs", "rust"]
 
 [dependencies]
 cliclack = { version = "0.3.7", optional = true }
+env-rs = { git = "https://github.com/yonasBSD/env.rs", version = "0.1.0" }
 once_cell = "1.21.3"
 terminal-banner = { version = "0.4.1", features = ["color"] }
 tracing = "0.1.44"

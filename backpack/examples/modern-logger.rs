@@ -10,9 +10,9 @@
 //!   cargo run --example modern-logger -- -v      # verbose mode
 //!   cargo run --example modern-logger -- --json  # JSON output
 
-use your_crate::{
-    logger::{set_logger, log, Printer, ModernLogger, Verbosity, LogFormat},
+use log_rs::{
     banner::{BannerConfig, print as print_banner},
+    logging::{LogFormat, ModernLogger, Printer, Verbosity, log::*, set_logger},
 };
 use std::thread;
 use std::time::Duration;
@@ -38,7 +38,7 @@ fn main() {
     };
 
     // Initialize the logger with ModernLogger formatter
-    let logger = Printer::new(ModernLogger, format);
+    let logger = Printer::new(ModernLogger, format, verbosity);
     set_logger(logger);
 
     // Print application banner (skip in JSON mode)
@@ -57,100 +57,100 @@ fn main() {
     }
 
     // Demonstrate modern startup sequence
-    log().intro("Bootstrapping application");
+    intro("Bootstrapping application");
     simulate_work(300);
 
-    log().step("Loading environment configuration");
+    step("Loading environment configuration");
     simulate_work(200);
-    log().dim("Found .env file with 12 variables");
+    dim("Found .env file with 12 variables");
 
-    log().step("Initializing logging subsystem");
+    step("Initializing logging subsystem");
     simulate_work(150);
-    log().dim("Log level: INFO, Format: JSON");
+    dim("Log level: INFO, Format: JSON");
 
-    log().step("Connecting to services");
+    step("Connecting to services");
     simulate_work(250);
-    log().ok("Connected to PostgreSQL");
-    log().ok("Connected to Redis");
-    log().ok("Connected to S3");
+    ok("Connected to PostgreSQL");
+    ok("Connected to Redis");
+    ok("Connected to S3");
 
-    log().outro("Bootstrap complete");
+    outro("Bootstrap complete");
 
     // Demonstrate deployment workflow
-    log().intro("Deploying application");
+    intro("Deploying application");
 
-    log().step("Building production assets");
+    step("Building production assets");
     simulate_work(800);
-    log().dim("Compiled 45 TypeScript files");
-    log().dim("Minified JavaScript: 2.3MB → 780KB");
-    log().dim("Optimized images: 156 files");
+    dim("Compiled 45 TypeScript files");
+    dim("Minified JavaScript: 2.3MB → 780KB");
+    dim("Optimized images: 156 files");
 
-    log().step("Running tests");
+    step("Running tests");
     simulate_work(600);
-    log().ok("Unit tests: 234 passed");
-    log().ok("Integration tests: 45 passed");
-    log().warn("Skipped 3 slow tests in CI mode");
+    ok("Unit tests: 234 passed");
+    ok("Integration tests: 45 passed");
+    warn("Skipped 3 slow tests in CI mode");
 
-    log().step("Uploading to CDN");
+    step("Uploading to CDN");
     simulate_work(500);
-    log().dim("Uploaded 203 files to cdn.example.com");
-    log().ok("Cache invalidated successfully");
+    dim("Uploaded 203 files to cdn.example.com");
+    ok("Cache invalidated successfully");
 
-    log().step("Deploying to production");
+    step("Deploying to production");
     simulate_work(700);
-    log().ok("Deployed to us-east-1");
-    log().ok("Deployed to eu-west-1");
-    log().ok("Deployed to ap-southeast-1");
+    ok("Deployed to us-east-1");
+    ok("Deployed to eu-west-1");
+    ok("Deployed to ap-southeast-1");
 
-    log().done("Deployment successful");
+    done("Deployment successful");
 
     // Demonstrate error recovery workflow
-    log().intro("Processing batch operations");
+    intro("Processing batch operations");
 
-    log().step("Importing user data");
+    step("Importing user data");
     simulate_work(400);
-    log().ok("Imported 1,250 users");
+    ok("Imported 1,250 users");
 
-    log().step("Validating email addresses");
+    step("Validating email addresses");
     simulate_work(350);
-    log().warn("Found 23 invalid email addresses");
-    log().dim("Invalid emails written to errors.log");
+    warn("Found 23 invalid email addresses");
+    dim("Invalid emails written to errors.log");
 
-    log().step("Sending welcome emails");
+    step("Sending welcome emails");
     simulate_work(500);
-    log().err("SMTP server connection failed");
-    log().warn("Retrying in 5 seconds...");
+    err("SMTP server connection failed");
+    warn("Retrying in 5 seconds...");
     simulate_work(300);
-    log().ok("Reconnected to SMTP server");
-    log().ok("Sent 1,227 welcome emails");
+    ok("Reconnected to SMTP server");
+    ok("Sent 1,227 welcome emails");
 
-    log().outro("Batch processing complete");
+    outro("Batch processing complete");
 
     // Demonstrate monitoring/metrics output
-    log().intro("Health check");
+    intro("Health check");
 
-    log().info("System metrics:");
-    log().dim("CPU usage: 23%");
-    log().dim("Memory: 1.2GB / 4GB (30%)");
-    log().dim("Disk: 45GB / 100GB (45%)");
+    info("System metrics:");
+    dim("CPU usage: 23%");
+    dim("Memory: 1.2GB / 4GB (30%)");
+    dim("Disk: 45GB / 100GB (45%)");
 
-    log().info("Service status:");
-    log().ok("API server: healthy");
-    log().ok("Database: healthy");
-    log().ok("Cache: healthy");
-    log().warn("Queue: degraded (high latency)");
+    info("Service status:");
+    ok("API server: healthy");
+    ok("Database: healthy");
+    ok("Cache: healthy");
+    warn("Queue: degraded (high latency)");
 
-    log().outro("Health check complete");
+    outro("Health check complete");
 
     // Debug and trace examples (only visible in verbose modes)
-    log().debug("Request processing time: 145ms");
-    log().debug("Cache hit rate: 87.3%");
-    log().trace("SQL query: SELECT * FROM users WHERE id = $1");
-    log().trace("Query execution time: 12ms");
+    debug("Request processing time: 145ms");
+    debug("Cache hit rate: 87.3%");
+    trace("SQL query: SELECT * FROM users WHERE id = $1");
+    trace("Query execution time: 12ms");
 
     // Final summary
-    log().ok("All systems operational");
-    log().info("Server ready to accept requests");
+    ok("All systems operational");
+    info("Server ready to accept requests");
 
     if format == LogFormat::Text {
         println!("\n{}", "─".repeat(60));

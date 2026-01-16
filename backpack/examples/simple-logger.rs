@@ -10,9 +10,9 @@
 //!   cargo run --example simple-logger -- -v     # verbose mode
 //!   cargo run --example simple-logger -- -q     # quiet mode
 
-use your_crate::{
-    logger::{set_logger, log, Printer, SimpleLogger, Verbosity, LogFormat},
+use log_rs::{
     banner::{BannerConfig, print as print_banner},
+    logging::{LogFormat, Printer, SimpleLogger, Verbosity, log::*, set_logger},
 };
 use std::thread;
 use std::time::Duration;
@@ -31,7 +31,7 @@ fn main() {
     };
 
     // Initialize the logger with SimpleLogger formatter
-    let logger = Printer::new(SimpleLogger, LogFormat::Text);
+    let logger = Printer::new(SimpleLogger, LogFormat::Text, verbosity);
     set_logger(logger);
 
     // Print application banner
@@ -46,56 +46,56 @@ fn main() {
     println!("\nRunning with verbosity: {:?}\n", verbosity);
 
     // Demonstrate different log levels
-    log().info("Starting application...");
-    log().ok("Configuration loaded successfully");
-    log().dim("Using default settings");
+    info("Starting application...");
+    ok("Configuration loaded successfully");
+    dim("Using default settings");
 
     // Demonstrate a task with intro/outro
-    log().intro("Initializing database");
+    intro("Initializing database");
     simulate_work(500);
-    log().step("Connecting to database");
+    step("Connecting to database");
     simulate_work(300);
-    log().step("Running migrations");
+    step("Running migrations");
     simulate_work(400);
-    log().step("Seeding initial data");
+    step("Seeding initial data");
     simulate_work(200);
-    log().outro("Database initialized");
+    outro("Database initialized");
 
     // Demonstrate warnings and errors
-    log().warn("Cache is not configured - performance may be degraded");
+    warn("Cache is not configured - performance may be degraded");
 
     // Demonstrate another task
-    log().intro("Starting HTTP server");
-    log().step("Binding to port 8080");
+    intro("Starting HTTP server");
+    step("Binding to port 8080");
     simulate_work(100);
-    log().step("Registering routes");
+    step("Registering routes");
     simulate_work(150);
-    log().step("Starting worker threads");
+    step("Starting worker threads");
     simulate_work(200);
-    log().done("Server ready");
+    done("Server ready");
 
     // Debug/trace messages (only visible in verbose mode)
-    log().debug("Debug: Connection pool size: 10");
-    log().trace("Trace: Request headers: {\"user-agent\": \"example/1.0\"}");
+    debug("Debug: Connection pool size: 10");
+    trace("Trace: Request headers: {\"user-agent\": \"example/1.0\"}");
 
     // Demonstrate error handling
-    log().intro("Processing background jobs");
-    log().step("Job 1: Send email notifications");
+    intro("Processing background jobs");
+    step("Job 1: Send email notifications");
     simulate_work(300);
-    log().ok("Sent 150 notifications");
+    ok("Sent 150 notifications");
 
-    log().step("Job 2: Generate reports");
+    step("Job 2: Generate reports");
     simulate_work(400);
-    log().err("Failed to generate report: database timeout");
+    err("Failed to generate report: database timeout");
 
-    log().step("Job 3: Clean up temp files");
+    step("Job 3: Clean up temp files");
     simulate_work(200);
-    log().ok("Deleted 45 temporary files");
-    log().outro("Background jobs completed (with errors)");
+    ok("Deleted 45 temporary files");
+    outro("Background jobs completed (with errors)");
 
     // Final status
-    log().ok("Application running successfully");
-    log().info("Press Ctrl+C to stop");
+    ok("Application running successfully");
+    info("Press Ctrl+C to stop");
 
     println!("\n{}", "=".repeat(60));
     println!("Try running with different verbosity levels:");

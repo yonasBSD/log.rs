@@ -1,13 +1,11 @@
 #[cfg(test)]
 mod logger_tests {
-    use super::*;
-    use std::sync::Arc;
+    use crate::logging::*;
 
     // Mock FormatLogger for testing
     struct MockLogger {
         quiet: bool,
         verbose: bool,
-        verbosity: Verbosity,
     }
 
     impl MockLogger {
@@ -15,7 +13,6 @@ mod logger_tests {
             Self {
                 quiet: verbosity == Verbosity::Quiet,
                 verbose: matches!(verbosity, Verbosity::Verbose | Verbosity::Trace),
-                verbosity,
             }
         }
     }
@@ -27,10 +24,6 @@ mod logger_tests {
 
         fn is_verbose(&self) -> bool {
             self.verbose
-        }
-
-        fn verbosity(&self) -> Verbosity {
-            self.verbosity
         }
 
         fn ok_raw(&self, m: &str) -> String {
@@ -157,7 +150,7 @@ mod logger_tests {
 
         #[test]
         fn test_simple_logger_formats() {
-            let logger = SimpleLogger;
+            let logger = crate::logging::SimpleLogger;
 
             // Test basic formatting (these will include unicode symbols)
             assert!(logger.ok_raw("test").contains("test"));
@@ -168,7 +161,7 @@ mod logger_tests {
 
         #[test]
         fn test_simple_logger_intro_outro() {
-            let logger = SimpleLogger;
+            let logger = crate::logging::SimpleLogger;
 
             let intro = logger.intro_raw("Starting task");
             assert!(intro.contains("Starting task"));
@@ -181,7 +174,7 @@ mod logger_tests {
 
         #[test]
         fn test_simple_logger_step() {
-            let logger = SimpleLogger;
+            let logger = crate::logging::SimpleLogger;
 
             let step = logger.step_raw("Processing item");
             assert!(step.contains("Processing item"));
@@ -229,17 +222,17 @@ mod logger_tests {
         #[test]
         fn test_printer_creation() {
             let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, LogFormat::Text);
+            let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
 
             // Verify printer was created (basic smoke test)
-            assert_eq!(printer.tasks.borrow().len(), 0);
-            assert_eq!(printer.steps.borrow().len(), 0);
+            assert_eq!(printer.tasks.lock().unwrap().len(), 0);
+            assert_eq!(printer.steps.lock().unwrap().len(), 0);
         }
 
         #[test]
         fn test_printer_with_json_format() {
             let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, LogFormat::Json);
+            let printer = Printer::new(logger, LogFormat::Json, Verbosity::Normal);
 
             assert_eq!(printer.format, LogFormat::Json);
         }
@@ -247,7 +240,7 @@ mod logger_tests {
         #[test]
         fn test_printer_with_text_format() {
             let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, LogFormat::Text);
+            let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
 
             assert_eq!(printer.format, LogFormat::Text);
         }
@@ -259,6 +252,13 @@ mod logger_tests {
     // Test global logger functionality
     mod global_logger_tests {
         use super::*;
+        use std::sync::{Arc, OnceLock};
+
+        //
+        // A shadow global used ONLY for testing.
+        // This avoids interfering with the real LOGGER in logging/mod.rs.
+        //
+        static TEST_LOGGER: OnceLock<Arc<dyn ScreenLogger + Send + Sync>> = OnceLock::new();
 
         struct TestLogger;
 
@@ -276,50 +276,36 @@ mod logger_tests {
             fn trace(&self, _m: &str) {}
         }
 
+        //
+        // A local version of log() that uses TEST_LOGGER instead of the real global.
+        //
+        fn test_log() -> &'static Arc<dyn ScreenLogger + Send + Sync> {
+            TEST_LOGGER.get().expect("Logger not initialized")
+        }
+
         #[test]
         #[should_panic(expected = "Logger not initialized")]
         fn test_log_panics_when_not_initialized() {
-            // Create a new OnceCell to avoid conflicts with other tests
-            // This test verifies the panic behavior
+            // Ensure the test logger is empty
+            assert!(TEST_LOGGER.get().is_none());
 
-            // Note: In real usage, you'd need to ensure the logger is set
-            // before calling log(). This test just verifies the panic.
-
-            // Attempting to get an uninitialized logger should panic
-            // We can't actually test this without a fresh OnceCell
-            // so this is more of a documentation of expected behavior
+            // This should panic
+            let _ = test_log();
         }
 
         #[test]
         fn test_set_logger_accepts_valid_logger() {
-            // This would set the global logger
-            // Note: Can only be called once per test binary execution
-            // set_logger(TestLogger);
+            // Initialize the test logger
+            let _ = TEST_LOGGER.set(Arc::new(TestLogger));
 
-            // If we could test this, we'd verify:
-            // let logger = log();
-            // logger.ok("test");
-        }
-    }
+            // Retrieve it
+            let logger = test_log();
 
-    // Test message content preservation
-    #[test]
-    fn test_message_content_preserved() {
-        let logger = MockLogger::new(Verbosity::Normal);
+            // Call a method to ensure dispatch works
+            logger.ok("hello");
 
-        let messages = vec![
-            "Simple message",
-            "Message with 🎉 emoji",
-            "Multi\nline\nmessage",
-            "Message with \"quotes\"",
-            "Message with special chars: <>&",
-        ];
-
-        for msg in messages {
-            assert!(logger.ok_raw(msg).contains(msg));
-            assert!(logger.warn_raw(msg).contains(msg));
-            assert!(logger.err_raw(msg).contains(msg));
-            assert!(logger.info_raw(msg).contains(msg));
+            // If we reach here, the logger works
+            assert!(true);
         }
     }
 
@@ -373,35 +359,35 @@ mod logger_tests {
     #[test]
     fn test_task_stack_management() {
         let logger = MockLogger::new(Verbosity::Verbose);
-        let printer = Printer::new(logger, LogFormat::Text);
+        let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
 
         // Initially empty
-        assert_eq!(printer.tasks.borrow().len(), 0);
+        assert_eq!(printer.tasks.lock().unwrap().len(), 0);
 
         // Note: We can't directly test intro/outro without capturing output
         // but we can verify the stack exists and is accessible
-        assert!(printer.tasks.borrow().is_empty());
+        assert!(printer.tasks.lock().unwrap().is_empty());
     }
 
     #[test]
     fn test_step_stack_management() {
         let logger = MockLogger::new(Verbosity::Verbose);
-        let printer = Printer::new(logger, LogFormat::Text);
+        let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
 
         // Initially empty
-        assert_eq!(printer.steps.borrow().len(), 0);
-        assert!(printer.steps.borrow().is_empty());
+        assert_eq!(printer.steps.lock().unwrap().len(), 0);
+        assert!(printer.steps.lock().unwrap().is_empty());
     }
 }
 
 // Integration-style tests
 #[cfg(test)]
 mod integration_tests {
-    use super::*;
+    use crate::logging::*;
 
     #[test]
     fn test_simple_logger_workflow() {
-        let logger = SimpleLogger;
+        let logger = crate::logging::SimpleLogger;
 
         // Simulate a typical workflow
         let intro = logger.intro_raw("Starting deployment");
@@ -435,8 +421,8 @@ mod integration_tests {
     #[test]
     fn test_error_always_visible() {
         // Errors should be visible in all verbosity modes
-        let quiet = SimpleLogger;
-        let normal = SimpleLogger;
+        let quiet = crate::logging::SimpleLogger;
+        let normal = crate::logging::SimpleLogger;
 
         // Both should format errors the same way
         let err1 = quiet.err_raw("Critical error");

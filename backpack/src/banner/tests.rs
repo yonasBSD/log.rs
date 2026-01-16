@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod banner_tests {
-    use super::*;
+    use crate::banner::*;
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
     // Constants for testing
@@ -172,7 +172,8 @@ mod banner_tests {
                 addr: None,
             };
 
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -190,7 +191,8 @@ mod banner_tests {
                 addr: Some(""),
             };
 
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -208,7 +210,8 @@ mod banner_tests {
                 addr: Some("127.0.0.1:8080"),
             };
 
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -229,7 +232,8 @@ mod banner_tests {
                 addr: Some("0.0.0.0:3000"),
             };
 
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -249,7 +253,8 @@ mod banner_tests {
                 addr: Some("invalid:address"),
             };
 
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -268,7 +273,8 @@ mod banner_tests {
                 addr: Some("[::1]:8080"),
             };
 
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -419,7 +425,8 @@ mod banner_tests {
 
             // Whitespace-only should not be filtered as empty
             // but will fail to parse as SocketAddr
-            let addr_line = config.addr
+            let addr_line = config
+                .addr
                 .filter(|s| !s.is_empty())
                 .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
                 .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
@@ -466,11 +473,11 @@ mod banner_tests {
         fn test_parse_invalid_formats() {
             let invalid_addrs = vec![
                 "not-an-address",
-                "127.0.0.1",           // missing port
-                ":8080",               // missing IP
-                "127.0.0.1:99999",     // port too high
-                "999.999.999.999:80",  // invalid IP
-                "localhost:8080",      // hostname not supported
+                "127.0.0.1",          // missing port
+                ":8080",              // missing IP
+                "127.0.0.1:99999",    // port too high
+                "999.999.999.999:80", // invalid IP
+                "localhost:8080",     // hostname not supported
             ];
 
             for addr in invalid_addrs {

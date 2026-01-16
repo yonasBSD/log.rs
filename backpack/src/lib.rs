@@ -1,5 +1,6 @@
 pub mod banner;
-pub mod log;
+pub mod config;
+pub mod logging;
 
 // Re-export
-pub use logging::{set_logger, log, SimpleLogger, ModernLogger, Verbosity, LogFormat};
+pub use logging::{LogFormat, ModernLogger, SimpleLogger, Verbosity, log, set_logger};

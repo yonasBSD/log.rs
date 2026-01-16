@@ -13,7 +13,7 @@
 //!
 //! - **Clean ASCII Art**: Eye-catching logo that works in any terminal
 //! - **Smart Address Display**: Automatically formats bind addresses for clarity
-//!   - Wildcard binds (0.0.0.0/::) show as `:PORT` for brevity
+//!   - Wildcard binds (`0.0.0.0/::`) show as `:PORT` for brevity
 //!   - Specific IPs display as `IP:PORT` for precision
 //! - **ANSI Colors**: Tasteful green highlighting for addresses
 //! - **Flexible Configuration**: Optional tagline and address display
@@ -22,7 +22,7 @@
 //! ## Quick Start
 //!
 //! ```rust
-//! use banner::{BannerConfig, print};
+//! use log_rs::banner::{BannerConfig, print};
 //!
 //! let config = BannerConfig {
 //!     name: "MyAPI",
@@ -66,6 +66,7 @@ pub struct BannerConfig<'a> {
 const GREEN: &str = "\x1b[32m";
 const RESET: &str = "\x1b[0m";
 
+#[must_use]
 pub fn print_address(addr: SocketAddr) -> String {
     let ip = addr.ip().to_string();
     let port = addr.port();
@@ -82,14 +83,15 @@ pub fn print_address(addr: SocketAddr) -> String {
 
 pub fn print(config: &BannerConfig<'_>) {
     let tagline = config.tagline.unwrap_or("app.rs framework");
-    let addr_line = config.addr
+    let addr_line = config
+        .addr
         .filter(|s| !s.is_empty())
         .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
         .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
         .unwrap_or_default();
 
     println!(
-        r#"
+        r"
    ____    __
   / __/___/ /  ___
  / _// __/ _ \/ _ \
@@ -98,7 +100,7 @@ pub fn print(config: &BannerConfig<'_>) {
 {tagline}
 
 {addr_line}
-"#,
+",
         version = config.version,
         tagline = tagline,
         addr_line = addr_line,

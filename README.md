@@ -65,14 +65,14 @@ use log_rs::{
 
 fn main() {
     // Initialize logger once at startup
-    let logger = Printer::new(ModernLogger, LogFormat::Text);
+    let logger = Printer::new(ModernLogger, LogFormat::Text, Verbosity::Normal);
     set_logger(logger);
 
     // Use anywhere in your app
-    log().intro("Deploying application");
-    log().step("Building assets");
-    log().ok("Build successful");
-    log().outro("Deployment complete");
+    log::intro("Deploying application");
+    log::step("Building assets");
+    log::ok("Build successful");
+    log::outro("Deployment complete");
     // → Deploying application
     // ⠿ Building assets
     // ✔ Build successful

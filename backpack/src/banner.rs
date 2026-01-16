@@ -1,10 +1,11 @@
+// banner.rs
 use std::net::SocketAddr;
 
 pub struct BannerConfig<'a> {
     pub name: &'a str,
     pub version: &'a str,
-    pub tagline: &'a str,
-    pub addr: &'a str,
+    pub tagline: Option<&'a str>,
+    pub addr: Option<&'a str>,
 }
 
 const GREEN: &str = "\x1b[32m";
@@ -25,7 +26,12 @@ pub fn print_address(addr: SocketAddr) -> String {
 }
 
 pub fn print(config: &BannerConfig<'_>) {
-    let addr: SocketAddr = config.addr.parse().unwrap();
+    let tagline = config.tagline.unwrap_or("app.rs framework");
+    let addr_line = config.addr
+        .filter(|s| !s.is_empty())
+        .and_then(|addr_str| addr_str.parse::<SocketAddr>().ok())
+        .map(|addr| format!(" ⇨ {} listening on {}", config.name, print_address(addr)))
+        .unwrap_or_default();
 
     println!(
         r#"
@@ -36,11 +42,10 @@ pub fn print(config: &BannerConfig<'_>) {
 
 {tagline}
 
- ⇨ {name} listening on {addr}
+{addr_line}
 "#,
         version = config.version,
-        tagline = config.tagline,
-        name = config.name,
-        addr = print_address(addr),
+        tagline = tagline,
+        addr_line = addr_line,
     );
 }

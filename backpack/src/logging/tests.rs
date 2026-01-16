@@ -3,6 +3,9 @@ mod logger_tests {
     use crate::logging::*;
 
     // Mock FormatLogger for testing
+    //
+    // This mock lets us exercise the default methods on FormatLogger
+    // without involving any real formatting or I/O.
     struct MockLogger {
         quiet: bool,
         verbose: bool,
@@ -211,18 +214,18 @@ mod logger_tests {
             let logger = ModernLogger;
 
             assert!(logger.debug_raw("test").starts_with("🔍"));
-            assert!(logger.trace_raw("test").starts_with("…"));
+            assert!(logger.trace_raw("test").starts_with("📡"));
         }
     }
 
-    // Test Printer behavior
+    // Test Printer behavior (state-level, not actual I/O)
     mod printer_tests {
         use super::*;
 
         #[test]
         fn test_printer_creation() {
             let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
 
             // Verify printer was created (basic smoke test)
             assert_eq!(printer.tasks.lock().unwrap().len(), 0);
@@ -232,7 +235,7 @@ mod logger_tests {
         #[test]
         fn test_printer_with_json_format() {
             let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, LogFormat::Json, Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Json, Verbosity::Normal);
 
             assert_eq!(printer.format, LogFormat::Json);
         }
@@ -240,13 +243,13 @@ mod logger_tests {
         #[test]
         fn test_printer_with_text_format() {
             let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
 
             assert_eq!(printer.format, LogFormat::Text);
         }
 
-        // Note: Testing actual output would require capturing stdout/stderr
-        // or using a mock I/O layer. These tests focus on state management.
+        // Note: Testing actual output is done in behavior_tests.rs
+        // using gag to capture stdout/stderr.
     }
 
     // Test global logger functionality
@@ -359,7 +362,7 @@ mod logger_tests {
     #[test]
     fn test_task_stack_management() {
         let logger = MockLogger::new(Verbosity::Verbose);
-        let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
+        let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
 
         // Initially empty
         assert_eq!(printer.tasks.lock().unwrap().len(), 0);
@@ -372,7 +375,7 @@ mod logger_tests {
     #[test]
     fn test_step_stack_management() {
         let logger = MockLogger::new(Verbosity::Verbose);
-        let printer = Printer::new(logger, LogFormat::Text, Verbosity::Normal);
+        let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
 
         // Initially empty
         assert_eq!(printer.steps.lock().unwrap().len(), 0);

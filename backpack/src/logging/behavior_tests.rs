@@ -7,8 +7,8 @@
 //!   4. JSON/Text formatting behavior under different verbosity levels
 //!
 //! Unlike the formatting tests in `tests.rs`, these tests capture real stdout
-//! and stderr output because `Printer` prints directly using println!/eprintln!
-//! and tracing macros, not through ScreenLogger.
+//! and stderr output because `Printer` (with `SimpleBackend`) prints using
+//! println!/eprintln! and tracing macros, not through a mock I/O layer.
 
 use super::*;
 use gag::BufferRedirect;
@@ -19,7 +19,7 @@ use std::io::Read;
 // Test Utility: Capture stdout/stderr for Printer behavior tests
 // -----------------------------------------------------------------------------
 // We use the `gag` crate to temporarily redirect stdout/stderr so we can assert
-// on what the Printer actually prints.
+// on what the Printer + SimpleBackend actually prints.
 //
 fn capture_stdout<F: FnOnce()>(f: F) -> String {
     let mut buf = Vec::new();
@@ -41,15 +41,16 @@ fn capture_stderr<F: FnOnce()>(f: F) -> String {
 // -----------------------------------------------------------------------------
 // Helper: Create a Printer for tests
 // -----------------------------------------------------------------------------
-// This returns a Printer configured with the given FormatLogger, format, and
-// verbosity.
+// This returns a Printer configured with the given FormatLogger, backend,
+// format, and verbosity. For behavior tests we always use SimpleBackend so
+// output goes through println!/eprintln!.
 //
 fn make_printer<L: FormatLogger + 'static>(
     inner: L,
     format: LogFormat,
     verbosity: Verbosity,
-) -> Printer<L> {
-    Printer::new(inner, format, verbosity)
+) -> Printer<L, SimpleBackend> {
+    Printer::new(inner, SimpleBackend, format, verbosity)
 }
 
 //
@@ -188,7 +189,8 @@ mod printing_behavior_tests {
 // ============================================================================
 // 3. PRINTER FORWARDING TESTS
 // ============================================================================
-// These tests verify that Printer forwards formatted messages correctly.
+// These tests verify that Printer forwards formatted messages correctly
+// through the SimpleBackend.
 //
 mod printer_forwarding_tests {
     use super::*;

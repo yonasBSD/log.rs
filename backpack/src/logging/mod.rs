@@ -154,7 +154,7 @@ use once_cell::sync::OnceCell;
 use std::{sync::Arc, sync::Mutex, time::Instant};
 use terminal_banner::Banner;
 use tracing::{Level, debug, error, info, span, span::Span, trace, warn};
-use tracing_subscriber::{Layer, Registry, EnvFilter, prelude::*};
+use tracing_subscriber::{EnvFilter, Layer, Registry, prelude::*};
 
 const PROJECT_NAME: &str = env!("CARGO_PKG_NAME");
 const PROJECT_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
@@ -848,7 +848,9 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
 
     fn trace(&self, m: &str) {
         // Respect trace mode via FormatLogger
-        if let Some(s) = self.inner.trace(m) && self.verbosity == Verbosity::Trace {
+        if let Some(s) = self.inner.trace(m)
+            && self.verbosity == Verbosity::Trace
+        {
             match self.format {
                 LogFormat::Json => self.emit_json("trace", &s),
                 LogFormat::Text => {

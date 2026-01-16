@@ -12,7 +12,7 @@
 
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
-    logging::{LogFormat, Printer, SimpleLogger, Verbosity, log::*, set_logger},
+    logging::{LogFormat, Printer, SimpleBackend, SimpleLogger, Verbosity, log::*, set_logger},
 };
 use std::thread;
 use std::time::Duration;
@@ -31,7 +31,7 @@ fn main() {
     };
 
     // Initialize the logger with SimpleLogger formatter
-    let logger = Printer::new(SimpleLogger, LogFormat::Text, verbosity);
+    let logger = Printer::new(SimpleLogger, SimpleBackend, LogFormat::Text, verbosity);
     set_logger(logger);
 
     // Print application banner

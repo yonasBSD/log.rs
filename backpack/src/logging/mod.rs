@@ -23,18 +23,20 @@
 //! ## Quick Start
 //!
 //! ```rust
-//! use log_rs::logging::{set_logger, log, Printer, SimpleLogger, Verbosity, LogFormat};
+//! use log_rs::logging::{
+//!     set_logger, log, Printer, SimpleLogger, Verbosity, LogFormat, SimpleBackend,
+//! };
 //!
 //! // Initialize once at startup
-//! let logger = Printer::new(SimpleLogger, LogFormat::Text, Verbosity::Normal);
+//! let logger = Printer::new(SimpleLogger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
 //! set_logger(logger);
 //!
 //! // Use anywhere in your app
-//! log().intro("Deploying application");
-//! log().step("Building assets");
-//! log().step("Uploading files");
-//! log().ok("All files uploaded");
-//! log().outro("Deployment complete");
+//! log::intro("Deploying application");
+//! log::step("Building assets");
+//! log::step("Uploading files");
+//! log::ok("All files uploaded");
+//! log::outro("Deployment complete");
 //! // → Outputs:
 //! // → Deploying application
 //! // ⠿ Building assets
@@ -75,12 +77,17 @@
 //!    - Returns styled strings ready for display
 //!
 //! 2. **`ScreenLogger` Trait**: Prints formatted messages to terminal
-//!    - Printer implementation adds span management
+//!    - `Printer<L, B>` implementation adds span management
 //!    - Routes output to stdout/stderr or JSON
 //!    - Integrates with tracing for structured logs
 //!
+//! A third layer, **`RenderBackend`**, controls *how* formatted strings are rendered:
+//!   - `SimpleBackend` → `println!` / `eprintln!`
+//!   - `ModernBackend` → `cliclack`-style rich output
+//!
 //! This separation makes it trivial to:
 //! - Add new formatters (Markdown, HTML, etc.)
+//! - Add new backends (TUI, GUI, remote logging)
 //! - Test formatting logic without I/O
 //! - Swap output backends without changing user code
 //!
@@ -101,6 +108,7 @@ pub mod log;
 
 pub static L: LogProxy = LogProxy;
 
+/// Proxy value so callers can write `L.ok("msg")` or `log().ok("msg")`.
 pub struct LogProxy;
 
 impl LogProxy {
@@ -154,7 +162,7 @@ use once_cell::sync::OnceCell;
 use std::{sync::Arc, sync::Mutex, time::Instant};
 use terminal_banner::Banner;
 use tracing::{Level, debug, error, info, span, span::Span, trace, warn};
-use tracing_subscriber::{EnvFilter, Layer, Registry, prelude::*};
+use tracing_subscriber::{Layer, Registry, fmt::writer::BoxMakeWriter, prelude::*};
 
 const PROJECT_NAME: &str = env!("CARGO_PKG_NAME");
 const PROJECT_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
@@ -167,6 +175,10 @@ const PROJECT_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 /// The logger must be initialized once at startup using `set_logger()`.
 static LOGGER: OnceCell<Arc<dyn ScreenLogger + Send + Sync>> = OnceCell::new();
 
+/// One-time guard for tracing subscriber initialization.
+///
+/// We keep tracing global and idempotent, while allowing per-Printer
+/// verbosity to control `RUST_LOG` before the first init.
 static INIT: OnceCell<()> = OnceCell::new();
 
 /// Set the global logger.
@@ -185,15 +197,21 @@ fn log() -> &'static Arc<dyn ScreenLogger + Send + Sync> {
     LOGGER.get().expect("Logger not initialized")
 }
 
+/// Initialize the global tracing subscriber.
+///
+/// This is idempotent: only the first call wins. Subsequent calls
+/// are cheap no-ops. The effective filter is taken from the current
+/// `RUST_LOG` environment variable at the time of the first call.
+use tracing_subscriber::filter::LevelFilter;
+
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     if INIT.get().is_some() {
         return Ok(()); // already initialized
     }
 
-    INIT.set(()).ok(); // mark as initialized
+    INIT.set(()).ok();
     env_rs::init()?;
 
-    // 1. Define the formatted output (The Layer)
     let telemetry_fmt = tracing_subscriber::fmt::layer()
         .with_ansi(true)
         .without_time()
@@ -201,38 +219,16 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
         .with_file(true)
         .with_line_number(true)
         .with_thread_ids(true)
-        .with_target(false);
+        .with_target(false)
+        .with_writer(BoxMakeWriter::new(std::io::stderr));
 
-    // 2. Define the first filter (Environment variable)
-    let env_filter = EnvFilter::from_default_env();
+    // Always enable all levels; our own verbosity controls what we actually emit.
+    let registry = Registry::default().with(telemetry_fmt.with_filter(LevelFilter::TRACE));
 
-    // --- This does not work ---
-    // 3. Combine the filters: Apply both the environment filter AND the max level filter.
-    // Note: When chaining filters (env_filter.and(max_level_filter)), the filter that
-    // allows an event to pass is the intersection of both.
-    //let combined_filter = env_filter.and(max_level_filter);
-
-    // 4. Construct the registry, applying the format layer and the combined filter layer
     #[cfg(feature = "tokio-console")]
-    {
-        let registry = tracing_subscriber::Registry::default()
-            // Send traces to tokio console
-            .with(console_subscriber::spawn())
-            // Apply formatting layer, filtered by the combined filter
-            //.with(telemetry_fmt.with_filter(combined_filter))
-            .with(telemetry_fmt.with_filter(env_filter));
+    let registry = registry.with(console_subscriber::spawn());
 
-        tracing::subscriber::set_global_default(registry)?;
-    }
-    #[cfg(not(feature = "tokio-console"))]
-    {
-        let registry = Registry::default()
-            // Apply formatting layer, filtered by the combined filter
-            //.with(telemetry_fmt.with_filter(combined_filter))
-            .with(telemetry_fmt.with_filter(env_filter));
-
-        tracing::subscriber::set_global_default(registry)?;
-    }
+    tracing::subscriber::set_global_default(registry)?;
 
     tracing::debug!("Logging initialized!");
     tracing::trace!("Tracing initialized!");
@@ -466,7 +462,6 @@ pub struct SimpleLogger;
 
 impl FormatLogger for SimpleLogger {
     fn ok_raw(&self, m: &str) -> String {
-        // Green checkmark (or ASCII fallback)
         if config::isnocolor() {
             format!("+ {m}")
         } else {
@@ -475,7 +470,6 @@ impl FormatLogger for SimpleLogger {
     }
 
     fn warn_raw(&self, m: &str) -> String {
-        // Yellow warning sign (or ASCII fallback)
         if config::isnocolor() {
             format!("! {m}")
         } else {
@@ -484,7 +478,6 @@ impl FormatLogger for SimpleLogger {
     }
 
     fn err_raw(&self, m: &str) -> String {
-        // Red X (always shown)
         if config::isnocolor() {
             format!("X {m}")
         } else {
@@ -493,12 +486,10 @@ impl FormatLogger for SimpleLogger {
     }
 
     fn info_raw(&self, m: &str) -> String {
-        // Simple indented info line
         format!("  {m}")
     }
 
     fn dim_raw(&self, m: &str) -> String {
-        // Dim gray (or plain)
         if config::isnocolor() {
             format!("  {m}")
         } else {
@@ -507,22 +498,18 @@ impl FormatLogger for SimpleLogger {
     }
 
     fn intro_raw(&self, m: &str) -> String {
-        // Start of a task
         format!("→ {m}")
     }
 
     fn outro_raw(&self, m: &str) -> String {
-        // End of a task
         format!("✓ {m}")
     }
 
     fn done_raw(&self, _m: &str) -> String {
-        // End of a task
         "✓ Done!".to_string()
     }
 
     fn step_raw(&self, m: &str) -> String {
-        // Progress indicator
         if config::isnocolor() {
             format!("* {m}")
         } else {
@@ -547,13 +534,182 @@ impl FormatLogger for SimpleLogger {
     }
 }
 
+/// A modern, minimal logger inspired by cliclack's visual style.
+///
+/// This logger only *formats* messages — it does not print.
+/// Quiet-mode suppression is handled by the `FormatLogger` trait.
+pub struct ModernLogger;
+
+impl FormatLogger for ModernLogger {
+    fn ok_raw(&self, m: &str) -> String {
+        format!("✔ {m}")
+    }
+
+    fn warn_raw(&self, m: &str) -> String {
+        format!("⚠ {m}")
+    }
+
+    fn err_raw(&self, m: &str) -> String {
+        format!("✗ {m}")
+    }
+
+    fn info_raw(&self, m: &str) -> String {
+        format!("ℹ {m}")
+    }
+
+    fn dim_raw(&self, m: &str) -> String {
+        format!("› {m}")
+    }
+
+    fn intro_raw(&self, m: &str) -> String {
+        format!("→ {m}")
+    }
+
+    fn outro_raw(&self, m: &str) -> String {
+        format!("✔ {m}")
+    }
+
+    fn done_raw(&self, m: &str) -> String {
+        format!("✔ {m}")
+    }
+
+    fn step_raw(&self, m: &str) -> String {
+        format!("⠿ {m}")
+    }
+
+    fn debug_raw(&self, m: &str) -> String {
+        format!("🔍 {m}")
+    }
+
+    fn trace_raw(&self, m: &str) -> String {
+        format!("📡 {m}")
+    }
+}
+
+/// A backend that knows how to *render* formatted strings.
+///
+/// This is where we map high-level semantics to concrete output:
+///   - `SimpleBackend` → println!/eprintln!
+///   - `ModernBackend` → cliclack::intro/outro/step/etc.
+pub trait RenderBackend {
+    fn render_error(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_info(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_remark(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_step(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_success(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_warning(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_intro(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_outro(&self, msg: &str) -> anyhow::Result<()>;
+}
+
+/// A simple backend that renders to stdout/stderr using println!/eprintln!.
+pub struct SimpleBackend;
+
+impl RenderBackend for SimpleBackend {
+    fn render_error(&self, msg: &str) -> anyhow::Result<()> {
+        eprintln!("{msg}");
+        Ok(())
+    }
+
+    fn render_info(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+
+    fn render_remark(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+
+    fn render_step(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+
+    fn render_success(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+
+    fn render_warning(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+
+    fn render_intro(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+
+    fn render_outro(&self, msg: &str) -> anyhow::Result<()> {
+        println!("{msg}");
+        Ok(())
+    }
+}
+
+/// A backend that renders using cliclack's rich CLI primitives.
+///
+/// Mapping (your design):
+///   error  → error
+///   info   → info
+///   dim    → remark
+///   step   → step
+///   ok     → success
+///   warn   → warning
+///   intro  → intro
+///   outro  → outro
+///   done   → outro (handled in Printer)
+///   debug  → info (handled in Printer)
+///   trace  → info (handled in Printer)
+pub struct ModernBackend;
+
+impl RenderBackend for ModernBackend {
+    fn render_error(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::error(msg)?;
+        Ok(())
+    }
+
+    fn render_info(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::info(msg)?;
+        Ok(())
+    }
+
+    fn render_remark(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::remark(msg)?;
+        Ok(())
+    }
+
+    fn render_step(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::step(msg)?;
+        Ok(())
+    }
+
+    fn render_success(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::success(msg)?;
+        Ok(())
+    }
+
+    fn render_warning(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::warning(msg)?;
+        Ok(())
+    }
+
+    fn render_intro(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::intro(msg)?;
+        Ok(())
+    }
+
+    fn render_outro(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::outro(msg)?;
+        Ok(())
+    }
+}
+
 /// A logger that *prints* messages to the screen.
 ///
 /// This trait represents the high-level logging API that most users interact with.
 /// It does not format messages itself — instead, it delegates to a `FormatLogger`
-/// implementation and then prints the resulting strings.
-///
-/// All quiet-mode logic is handled in the `FormatLogger` layer.
+/// implementation and then prints the resulting strings via a `RenderBackend`.
 pub trait ScreenLogger {
     /// Print a success message
     fn ok(&self, m: &str);
@@ -597,32 +753,32 @@ pub trait ScreenLogger {
 ///   - Nested step spans inside tasks
 ///   - Timing of task spans
 ///   - Cargo-style verbosity levels
-pub struct Printer<L: FormatLogger> {
-    /// The underlying formatter (`SimpleLogger`, `ModernLogger`, etc.)
+///
+/// It is generic over:
+///   - `L: FormatLogger`  → how messages are formatted
+///   - `B: RenderBackend` → how formatted strings are rendered
+pub struct Printer<L: FormatLogger, B: RenderBackend> {
     inner: L,
-
-    /// Stack of active task spans created by `intro()`
+    backend: B,
     tasks: Mutex<Vec<TimedSpan>>,
-
-    /// Stack of active step spans created by `step()`
     steps: Mutex<Vec<Span>>,
-
-    /// Output format: Text (default) or Json
-    ///
-    /// When Json is selected:
-    ///   - All log events are emitted as JSON objects
-    ///   - stdout/stderr is still respected based on log level
-    ///   - tracing spans are still created in verbose/trace mode
     format: LogFormat,
-
-    /// Current verbosity level
     verbosity: Verbosity,
 }
 
-impl<L: FormatLogger> Printer<L> {
-    /// Create a new printer with the given formatter and output format.
-    pub fn new(inner: L, format: LogFormat, verbosity: Verbosity) -> Self {
-        // Set RUST_LOG automatically based on verbosity
+impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
+    /// Create a new printer with the given formatter, backend, and output format.
+    ///
+    /// This also:
+    ///   - Sets `RUST_LOG` based on the requested verbosity
+    ///   - Initializes the global tracing subscriber once
+    pub fn new(inner: L, backend: B, format: LogFormat, verbosity: Verbosity) -> Self {
+        // Set RUST_LOG automatically based on verbosity.
+        //
+        // This must happen *before* the first call to `init()` so that
+        // `EnvFilter::from_default_env()` sees the right value. Subsequent
+        // calls to `Printer::new()` will not reconfigure tracing, but they
+        // still update the in-process config flags used by FormatLogger.
         match verbosity {
             Verbosity::Quiet => {
                 crate::config::setquiet(true);
@@ -632,17 +788,7 @@ impl<L: FormatLogger> Printer<L> {
                 crate::config::setquiet(false);
                 crate::config::setverbose(false);
             }
-            Verbosity::Verbose => {
-                unsafe {
-                    std::env::set_var("RUST_LOG", "debug");
-                }
-                crate::config::setquiet(false);
-                crate::config::setverbose(true);
-            }
-            Verbosity::Trace => {
-                unsafe {
-                    std::env::set_var("RUST_LOG", "trace");
-                }
+            Verbosity::Verbose | Verbosity::Trace => {
                 crate::config::setquiet(false);
                 crate::config::setverbose(true);
             }
@@ -653,28 +799,47 @@ impl<L: FormatLogger> Printer<L> {
 
         Self {
             inner,
+            backend,
             tasks: Mutex::new(Vec::new()),
             steps: Mutex::new(Vec::new()),
             format,
             verbosity,
         }
     }
+
+    /// Emit a single log event as a JSON object.
+    ///
+    /// This function:
+    ///   - Builds a structured JSON object using `serde_json`
+    ///   - Includes a timestamp for easier log correlation
+    ///   - Sends errors to stderr and all other levels to stdout
+    ///   - Does NOT create tracing spans (that happens elsewhere)
+    #[allow(clippy::unused_self)]
+    fn emit_json(&self, level: &str, message: &str) {
+        let obj = serde_json::json!({
+            "level": level,
+            "message": message,
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        });
+
+        match level {
+            "error" => eprintln!("{obj}"),
+            _ => println!("{obj}"),
+        }
+    }
 }
 
-impl<L: FormatLogger> ScreenLogger for Printer<L> {
+impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn intro(&self, m: &str) {
-        // Respect quiet mode via FormatLogger
         if let Some(s) = self.inner.intro(m) {
             match self.format {
                 LogFormat::Json => {
-                    // JSON mode always prints JSON
                     self.emit_json("info", &s);
                 }
                 LogFormat::Text => {
-                    // Cargo-style: intro → stdout
-                    println!("{s}");
+                    // intro → intro
+                    let _ = self.backend.render_intro(&s);
 
-                    // Also emit tracing span in verbose/trace mode
                     if self.inner.is_verbose() {
                         let sp = span!(Level::INFO, "task", message = %m);
                         self.tasks.lock().unwrap().push(TimedSpan {
@@ -702,19 +867,15 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
                         if let Some(TimedSpan { span, start }) = task {
                             drop(span);
                             let elapsed = start.elapsed();
-
-                            // Format timing like Cargo: 23ms, 1.2s, etc.
                             let timing = format_duration(elapsed);
+                            let msg = format!("{s} (took {timing})");
 
-                            // Print timing to stdout
-                            println!("{s} (took {timing})");
-
-                            // Emit tracing event too
-                            info!("{s} (took {timing})");
+                            // outro → outro
+                            let _ = self.backend.render_outro(&msg);
+                            info!("{msg}");
                         }
                     } else {
-                        // Normal (non-verbose) printing
-                        println!("{s}");
+                        let _ = self.backend.render_outro(&s);
                     }
                 }
             }
@@ -727,27 +888,22 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
                 LogFormat::Json => self.emit_json("info", &s),
                 LogFormat::Text => {
                     if self.inner.is_verbose() {
-                        // Close step spans
                         self.steps.lock().unwrap().clear();
 
-                        // Close task span
                         let task = self.tasks.lock().unwrap().pop();
                         if let Some(TimedSpan { span, start }) = task {
                             drop(span);
                             let elapsed = start.elapsed();
-
-                            // Format timing like Cargo: 23ms, 1.2s, etc.
                             let timing = format_duration(elapsed);
+                            let msg = format!("{s} (took {timing})");
 
-                            // Print timing to stdout
-                            println!("{s} (took {timing})");
-
-                            // Emit tracing event too
-                            info!("{s} (took {timing})");
+                            // done → outro
+                            let _ = self.backend.render_outro(&msg);
+                            info!("{msg}");
                         }
                     } else {
-                        // Normal (non-verbose) printing
-                        println!("{s}");
+                        // done → outro
+                        let _ = self.backend.render_outro(&s);
                     }
                 }
             }
@@ -760,19 +916,13 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
                 LogFormat::Json => {
                     self.emit_json("info", &s);
                 }
-
                 LogFormat::Text => {
-                    // Always print the step message
-                    println!("{s}");
+                    // step → step
+                    let _ = self.backend.render_step(&s);
 
                     if self.inner.is_verbose() {
-                        // Create a new step span with timing
                         let sp = span!(Level::INFO, "step", message = %m);
-
-                        // Push a timed span (just like intro)
                         self.steps.lock().unwrap().push(sp);
-
-                        // Emit tracing event
                         info!("{s}");
                     }
                 }
@@ -784,7 +934,10 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
         if let Some(s) = self.inner.ok(m) {
             match self.format {
                 LogFormat::Json => self.emit_json("info", &s),
-                LogFormat::Text => println!("{s}"), // stdout
+                LogFormat::Text => {
+                    // ok → success
+                    let _ = self.backend.render_success(&s);
+                }
             }
         }
     }
@@ -794,7 +947,8 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
             match self.format {
                 LogFormat::Json => self.emit_json("warn", &s),
                 LogFormat::Text => {
-                    println!("{s}"); // stdout
+                    // warn → warning
+                    let _ = self.backend.render_warning(&s);
                     warn!("{s}");
                 }
             }
@@ -802,13 +956,13 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
     }
 
     fn err(&self, m: &str) {
-        // Errors are never suppressed
         let s = self.inner.err(m);
 
         match self.format {
             LogFormat::Json => self.emit_json("error", &s),
             LogFormat::Text => {
-                eprintln!("{s}"); // stderr
+                // error → error
+                let _ = self.backend.render_error(&s);
                 error!("{s}");
             }
         }
@@ -818,7 +972,10 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
         if let Some(s) = self.inner.info(m) {
             match self.format {
                 LogFormat::Json => self.emit_json("info", &s),
-                LogFormat::Text => println!("{s}"), // stdout
+                LogFormat::Text => {
+                    // info → info
+                    let _ = self.backend.render_info(&s);
+                }
             }
         }
     }
@@ -827,132 +984,46 @@ impl<L: FormatLogger> ScreenLogger for Printer<L> {
         if let Some(s) = self.inner.dim(m) {
             match self.format {
                 LogFormat::Json => self.emit_json("debug", &s),
-                LogFormat::Text => println!("{s}"), // stdout
+                LogFormat::Text => {
+                    // dim → remark
+                    let _ = self.backend.render_remark(&s);
+                }
             }
         }
     }
 
     fn debug(&self, m: &str) {
-        // Respect verbose/trace mode via FormatLogger
         if let Some(s) = self.inner.debug(m) {
             match self.format {
                 LogFormat::Json => self.emit_json("debug", &s),
                 LogFormat::Text => {
-                    // Cargo-style: debug → stderr
-                    eprintln!("{s}");
-                    debug!("{s}"); // tracing event
+                    // debug → info (screen) + debug! (tracing)
+                    //let _ = self.backend.render_info(&s);
+                    debug!("{s}");
                 }
             }
         }
     }
 
     fn trace(&self, m: &str) {
-        // Respect trace mode via FormatLogger
+        // Respect trace mode via FormatLogger and explicit Verbosity::Trace.
+        //
+        // This ensures:
+        //   - `trace!()` calls only appear when the user explicitly requested
+        //     trace verbosity (e.g., `-vv`).
+        //   - Tests that expect trace-only visibility can rely on Verbosity.
         if let Some(s) = self.inner.trace(m)
             && self.verbosity == Verbosity::Trace
         {
             match self.format {
                 LogFormat::Json => self.emit_json("trace", &s),
                 LogFormat::Text => {
-                    // Cargo-style: trace → stderr
-                    eprintln!("{s}");
-                    trace!("{s}"); // tracing event
+                    // trace → tracing::trace! only (no extra stdout noise)
+                    //let _ = self.backend.render_info(&s);
+                    trace!("{s}");
                 }
             }
         }
-    }
-}
-
-impl<L: FormatLogger> Printer<L> {
-    /// Emit a single log event as a JSON object.
-    ///
-    /// This function:
-    ///   - Builds a structured JSON object using `serde_json`
-    ///   - Includes a timestamp for easier log correlation
-    ///   - Sends errors to stderr and all other levels to stdout
-    ///   - Does NOT create tracing spans (that happens elsewhere)
-    ///
-    /// Example output:
-    /// {
-    ///   "level": "info",
-    ///   "message": "Uploading assets",
-    ///   "timestamp": "2026-01-15T01:17:22.123Z"
-    /// }
-    #[allow(clippy::unused_self)]
-    fn emit_json(&self, level: &str, message: &str) {
-        // Construct a structured JSON object
-        let obj = serde_json::json!({
-            "level": level,
-            "message": message,
-            "timestamp": chrono::Utc::now().to_rfc3339(),
-        });
-
-        // Print to stderr for errors, stdout otherwise
-        match level {
-            "error" => eprintln!("{obj}"),
-            _ => println!("{obj}"),
-        }
-    }
-}
-
-/// A modern, minimal logger inspired by cliclack's visual style.
-///
-/// This logger only *formats* messages — it does not print.
-/// Quiet-mode suppression is handled by the `FormatLogger` trait.
-pub struct ModernLogger;
-
-impl FormatLogger for ModernLogger {
-    fn ok_raw(&self, m: &str) -> String {
-        // Clean success checkmark
-        format!("✔ {m}")
-    }
-
-    fn warn_raw(&self, m: &str) -> String {
-        // Clean warning symbol
-        format!("⚠ {m}")
-    }
-
-    fn err_raw(&self, m: &str) -> String {
-        // Clean error symbol
-        format!("✗ {m}")
-    }
-
-    fn info_raw(&self, m: &str) -> String {
-        // Info symbol
-        format!("ℹ {m}")
-    }
-
-    fn dim_raw(&self, m: &str) -> String {
-        // Muted remark-style prefix
-        format!("› {m}")
-    }
-
-    fn intro_raw(&self, m: &str) -> String {
-        // Start of a task
-        format!("→ {m}")
-    }
-
-    fn outro_raw(&self, m: &str) -> String {
-        // End of a task
-        format!("✔ {m}")
-    }
-
-    fn done_raw(&self, m: &str) -> String {
-        // End of a task
-        format!("✔ {m}")
-    }
-
-    fn step_raw(&self, m: &str) -> String {
-        // Progress indicator
-        format!("⠿ {m}")
-    }
-
-    fn debug_raw(&self, m: &str) -> String {
-        format!("🔍 {m}")
-    }
-
-    fn trace_raw(&self, m: &str) -> String {
-        format!("… {m}")
     }
 }
 

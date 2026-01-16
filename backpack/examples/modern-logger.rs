@@ -12,7 +12,7 @@
 
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
-    logging::{LogFormat, ModernLogger, Printer, Verbosity, log::*, set_logger},
+    logging::{LogFormat, ModernBackend, ModernLogger, Printer, Verbosity, log::*, set_logger},
 };
 use std::thread;
 use std::time::Duration;
@@ -38,7 +38,7 @@ fn main() {
     };
 
     // Initialize the logger with ModernLogger formatter
-    let logger = Printer::new(ModernLogger, format, verbosity);
+    let logger = Printer::new(ModernLogger, ModernBackend, format, verbosity);
     set_logger(logger);
 
     // Print application banner (skip in JSON mode)

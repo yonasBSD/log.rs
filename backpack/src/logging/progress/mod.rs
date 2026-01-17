@@ -1,7 +1,9 @@
+/*
 /// A lightweight progress handle.
 ///
 /// This is intentionally simple: it just emits step/info/done messages
 /// through the global logger, so it works with any backend.
+
 use crate::log;
 
 pub struct Progress {
@@ -13,7 +15,7 @@ pub struct Progress {
 impl Progress {
     #[must_use]
     pub fn new(label: &str) -> Self {
-        log().intro(label);
+        log::<GlobalLogger>().intro(label);
         Self {
             label: label.to_string(),
             current: 0,
@@ -23,7 +25,7 @@ impl Progress {
 
     #[must_use]
     pub fn with_total(label: &str, total: u64) -> Self {
-        log().intro(label);
+        log::<GlobalLogger>().intro(label);
         Self {
             label: label.to_string(),
             current: 0,
@@ -35,21 +37,22 @@ impl Progress {
         self.current = current;
         self.total = Some(total);
         let msg = format!("{}: {}/{}", self.label, self.current, total);
-        log().step(&msg);
+        log::<GlobalLogger>().step(&msg);
     }
 
     pub fn tick(&mut self) {
         self.current += 1;
         if let Some(total) = self.total {
             let msg = format!("{}: {}/{}", self.label, self.current, total);
-            log().step(&msg);
+            log::<GlobalLogger>().step(&msg);
         } else {
             let msg = format!("{}: {}", self.label, self.current);
-            log().step(&msg);
+            log::<GlobalLogger>().step(&msg);
         }
     }
 
     pub fn finish(self, _msg: &str) {
-        log().done();
+        log::<GlobalLogger>().done();
     }
 }
+*/

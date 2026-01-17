@@ -1,4 +1,4 @@
-use crate::logging::{globals, log};
+use crate::logging::{GlobalLogger, LogEvent, globals, log};
 use globals::{INIT, PROJECT_DESC, PROJECT_NAME};
 use terminal_banner::Banner;
 use tracing_subscriber::{
@@ -45,46 +45,46 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn ok(msg: &str) {
-    log().ok(msg);
+pub fn ok(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().ok_event(msg)
 }
 
-pub fn warn(msg: &str) {
-    log().warn(msg);
+pub fn warn(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().warn_event(msg)
 }
 
-pub fn err(msg: &str) {
-    log().err(msg);
+pub fn err(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().err_event(msg)
 }
 
-pub fn info(msg: &str) {
-    log().info(msg);
+pub fn info(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().info_event(msg)
 }
 
-pub fn dim(msg: &str) {
-    log().dim(msg);
+pub fn dim(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().dim_event(msg)
 }
 
-pub fn intro(msg: &str) {
-    log().intro(msg);
+pub fn intro(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().intro_event(msg)
 }
 
-pub fn outro(msg: &str) {
-    log().outro(msg);
+pub fn outro(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().outro_event(msg)
 }
 
-pub fn done() {
-    log().done();
+pub fn done() -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().done_event()
 }
 
-pub fn step(msg: &str) {
-    log().step(msg);
+pub fn step(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().step_event(msg)
 }
 
-pub fn debug(msg: &str) {
-    log().debug(msg);
+pub fn debug(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().debug_event(msg)
 }
 
-pub fn trace(msg: &str) {
-    log().trace(msg);
+pub fn trace(msg: &str) -> LogEvent<'static, GlobalLogger> {
+    log::<GlobalLogger>().trace_event(msg)
 }

@@ -1,11 +1,5 @@
-use crate::LogFormat;
-use crate::Verbosity;
-use crate::logging::Fields;
-use crate::logging::FormatLogger;
-use crate::logging::LogEvent;
-use crate::logging::LogLevel;
-use crate::logging::Printer;
-use crate::logging::RenderBackend;
+use crate::logging::*;
+use crate::{LogFormat, Verbosity};
 
 // -----------------------------------------------------------------------------
 // Printer: unified emit_event, JSON helpers, and builder-style APIs
@@ -99,23 +93,87 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
     // -------------------------------------------------------------------------
     // Builder-style APIs (Drop-based structured logging)
     // -------------------------------------------------------------------------
-    pub fn info<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+    pub fn info<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
         LogEvent::new(self, LogLevel::Info, msg)
     }
 
-    pub fn warn<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+    pub fn warn<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
         LogEvent::new(self, LogLevel::Warn, msg)
     }
 
-    pub fn error<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+    pub fn error<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
         LogEvent::new(self, LogLevel::Error, msg)
     }
 
-    pub fn debug<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+    pub fn debug<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
         LogEvent::new(self, LogLevel::Debug, msg)
     }
 
-    pub fn trace<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+    pub fn trace<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
         LogEvent::new(self, LogLevel::Trace, msg)
+    }
+
+    pub fn ok_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Info, msg)
+    }
+
+    pub fn warn_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Warn, msg)
+    }
+
+    pub fn err_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Error, msg)
+    }
+
+    pub fn info_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Info, msg)
+    }
+
+    pub fn dim_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Debug, msg)
+    }
+
+    pub fn debug_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Debug, msg)
+    }
+
+    pub fn trace_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Trace, msg)
+    }
+
+    pub fn intro_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Trace, msg)
+    }
+
+    pub fn step_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Trace, msg)
+    }
+
+    pub fn outro_event<'a>(&'a self, msg: &str) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Trace, msg)
+    }
+
+    pub fn done_event<'a>(&'a self) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Trace, "")
+    }
+
+    pub fn dump_tree_event<'a>(&'a self) -> LogEvent<'a, Self> {
+        LogEvent::new(self, LogLevel::Debug, "")
+    }
+}
+
+// Let Printer be a source of structured events for LogEvent
+impl<L: FormatLogger, B: RenderBackend> EmitsEvents for Printer<L, B> {
+    fn emit_event(&self, level: LogLevel, msg: &str, fields: &crate::logging::Fields) {
+        match self.format {
+            LogFormat::Json => {
+                // JSON mode: include fields
+                self.emit_json_fields(level, msg, Some(fields));
+            }
+            LogFormat::Text => {
+                // Text mode: ignore fields for now, just emit the message
+                self.emit_text(level, msg);
+            }
+        }
     }
 }

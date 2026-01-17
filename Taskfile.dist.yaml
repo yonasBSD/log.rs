@@ -84,7 +84,7 @@ tasks:
     sources:
       - '**/*.rs'
     cmds:
-      - cargo nextest run --workspace --all-features --all-targets --verbose --no-tests=warn
+      - cargo nextest run --workspace --all-targets --verbose --no-tests=warn --no-capture
 
   test:scripts:
     desc: Test using scripts

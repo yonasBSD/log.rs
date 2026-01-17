@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@b3b07ba8b418998c39fb20f53e8b695cdcc8de1b # master
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561 # master
         with:
           toolchain: ${{ matrix.rust }}
 
@@ -74,7 +74,7 @@ jobs:
       - name: Run cargo test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cargo test --all-features
+        run: cargo test --all-features -- --no-capture
 
   freebsd:
     name: FreeBSD
@@ -154,7 +154,7 @@ jobs:
             sysctl hw.ncpu
             sysctl hw.physmem
             sysctl hw.usermem
-            cargo test --all-features
+            cargo test --all-features -- --no-capture
 
   openbsd:
     name: OpenBSD
@@ -211,7 +211,7 @@ jobs:
             ls -lah
             whoami
             env
-            cargo test --all-features
+            cargo test --all-features -- --no-capture
 
   netbsd:
     name: NetBSD
@@ -270,7 +270,7 @@ jobs:
             ls -lah
             whoami
             env
-            cargo test --all-features
+            cargo test --all-features -- --no-capture
 
   alpine:
     name: Alpine
@@ -311,7 +311,7 @@ jobs:
       - name: Run tests
         run: |
           apk add cargo
-          cargo test --all-features
+          cargo test --all-features -- --no-capture
         shell: alpine.sh --root {0}
 
   arch:
@@ -356,7 +356,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cargo test --all-features
+          cargo test --all-features -- --no-capture
 
 # TODO: Add support for more OSs
 # - OpenSUSE

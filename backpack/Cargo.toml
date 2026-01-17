@@ -7,13 +7,27 @@ description = "Logging framework"
 repository = "https://github.com/yonasBSD/log.rs"
 readme = "README.md"
 keywords = ["logging", "logs", "rust"]
+categories = ["development-tool", "development-tools::debugging"]
 
 [dependencies]
-cliclack = { version = "0.3.7", optional = true }
+anyhow = "1.0.100"
+chrono = "0.4.43"
+cliclack = { git = "https://github.com/yonasBSD/cliclack", branch = "yonasBSD", optional = true }
+console-subscriber = { version = "0.5.0", optional = true }
+dirs = "6.0.0"
+env-rs = { git = "https://github.com/yonasBSD/env.rs", version = "0.1.0" }
 once_cell = "1.21.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 terminal-banner = { version = "0.4.1", features = ["color"] }
+toml = "0.9.11"
 tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
 
 [features]
 default = ["modern"]
 modern = ["dep:cliclack"]
+tokio-console = ["dep:console-subscriber"]
+
+[dev-dependencies]
+gag = "1.0.0"

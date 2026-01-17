@@ -102,7 +102,7 @@ fn main() {
     ok("Deployed to eu-west-1");
     ok("Deployed to ap-southeast-1");
 
-    done("Deployment successful");
+    done();
 
     // Demonstrate error recovery workflow
     intro("Processing batch operations");

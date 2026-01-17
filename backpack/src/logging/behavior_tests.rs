@@ -5,22 +5,12 @@
 //!   2. That something is actually printed in verbose/trace modes
 //!   3. That `Printer` forwards messages correctly
 //!   4. JSON/Text formatting behavior under different verbosity levels
-//!
-//! Unlike the formatting tests in `tests.rs`, these tests capture real stdout
-//! and stderr output because `Printer` (with `SimpleBackend`) prints using
-//! println!/eprintln! and tracing macros, not through a mock I/O layer.
+//!   5. New behaviors: quiet-but-timed outro/done, structured fields, progress, task tree
 
 use super::*;
 use gag::BufferRedirect;
 use std::io::Read;
 
-//
-// -----------------------------------------------------------------------------
-// Test Utility: Capture stdout/stderr for Printer behavior tests
-// -----------------------------------------------------------------------------
-// We use the `gag` crate to temporarily redirect stdout/stderr so we can assert
-// on what the Printer + SimpleBackend actually prints.
-//
 fn capture_stdout<F: FnOnce()>(f: F) -> String {
     let mut buf = Vec::new();
     let mut redirect = BufferRedirect::stdout().unwrap();
@@ -37,14 +27,6 @@ fn capture_stderr<F: FnOnce()>(f: F) -> String {
     String::from_utf8(buf).unwrap()
 }
 
-//
-// -----------------------------------------------------------------------------
-// Helper: Create a Printer for tests
-// -----------------------------------------------------------------------------
-// This returns a Printer configured with the given FormatLogger, backend,
-// format, and verbosity. For behavior tests we always use SimpleBackend so
-// output goes through println!/eprintln!.
-//
 fn make_printer<L: FormatLogger + 'static>(
     inner: L,
     format: LogFormat,
@@ -53,12 +35,9 @@ fn make_printer<L: FormatLogger + 'static>(
     Printer::new(inner, SimpleBackend, format, verbosity)
 }
 
-//
 // ============================================================================
 // 1. VERBOSITY BEHAVIOR TESTS
 // ============================================================================
-// These tests verify that debug/trace visibility matches the verbosity rules.
-//
 mod verbosity_behavior_tests {
     use super::*;
 
@@ -107,7 +86,7 @@ mod verbosity_behavior_tests {
     }
 
     #[test]
-    fn quiet_hides_everything_except_errors() {
+    fn quiet_hides_everything_except_errors_and_timing_summaries() {
         config::setquiet(true);
 
         let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Quiet);
@@ -130,12 +109,9 @@ mod verbosity_behavior_tests {
     }
 }
 
-//
 // ============================================================================
 // 2. “SOMETHING IS ACTUALLY PRINTED” TESTS
 // ============================================================================
-// These tests ensure that verbose/trace modes actually produce output.
-//
 mod printing_behavior_tests {
     use super::*;
 
@@ -185,13 +161,9 @@ mod printing_behavior_tests {
     }
 }
 
-//
 // ============================================================================
 // 3. PRINTER FORWARDING TESTS
 // ============================================================================
-// These tests verify that Printer forwards formatted messages correctly
-// through the SimpleBackend.
-//
 mod printer_forwarding_tests {
     use super::*;
 
@@ -240,17 +212,14 @@ mod printer_forwarding_tests {
     }
 }
 
-//
 // ============================================================================
 // 4. JSON/TEXT FORMAT BEHAVIOR TESTS
 // ============================================================================
-// These tests verify JSON output behavior and ensure spans are not created.
-//
 mod json_format_behavior_tests {
     use super::*;
 
     #[test]
-    fn json_mode_always_prints_json() {
+    fn json_mode_always_prints_valid_json() {
         let printer = make_printer(SimpleLogger, LogFormat::Json, Verbosity::Normal);
 
         let out = capture_stdout(|| {
@@ -276,7 +245,7 @@ mod json_format_behavior_tests {
     }
 
     #[test]
-    fn json_mode_does_not_create_spans() {
+    fn json_mode_does_not_create_spans_but_still_outputs_json() {
         let printer = make_printer(SimpleLogger, LogFormat::Json, Verbosity::Trace);
 
         let out = capture_stdout(|| {
@@ -289,13 +258,34 @@ mod json_format_behavior_tests {
             serde_json::from_str::<serde_json::Value>(line).expect("Expected valid JSON output");
         }
     }
+
+    #[test]
+    fn json_mode_supports_structured_fields() {
+        let printer = make_printer(SimpleLogger, LogFormat::Json, Verbosity::Normal);
+
+        let out = capture_stdout(|| {
+            let mut fields = Fields::new();
+            fields.insert("user_id".to_string(), "42".to_string());
+            fields.insert("role".to_string(), "admin".to_string());
+            printer.info_with_fields("User logged in", fields);
+        });
+
+        let line = out.lines().find(|l| !l.trim().is_empty()).expect("Expected output");
+        let v: serde_json::Value = serde_json::from_str(line).expect("Expected valid JSON");
+        assert_eq!(v["message"], "User logged in");
+        assert_eq!(v["fields"]["user_id"], "42");
+        assert_eq!(v["fields"]["role"], "admin");
+    }
 }
 
+// ============================================================================
+// 5. NESTED SPAN / TASK TREE / TIMING TESTS
+// ============================================================================
 mod nested_span_tests {
     use super::*;
 
     #[test]
-    fn nested_steps_create_nested_spans() {
+    fn nested_steps_create_nested_spans_and_clear_on_outro() {
         let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Verbose);
 
         let out = capture_stdout(|| {
@@ -305,19 +295,17 @@ mod nested_span_tests {
             printer.outro("done");
         });
 
-        // All messages should appear in stdout
         assert!(out.contains("top-level"));
         assert!(out.contains("first-step"));
         assert!(out.contains("second-step"));
         assert!(out.contains("done"));
 
-        // Internally, steps should be cleared after outro()
         assert!(printer.steps.lock().unwrap().is_empty());
         assert!(printer.tasks.lock().unwrap().is_empty());
     }
 
     #[test]
-    fn nested_tasks_create_multiple_task_spans() {
+    fn nested_tasks_create_multiple_task_spans_and_clear() {
         let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Verbose);
 
         let out = capture_stdout(|| {
@@ -332,8 +320,22 @@ mod nested_span_tests {
         assert!(out.contains("done-2"));
         assert!(out.contains("done-1"));
 
-        // All spans should be closed
         assert!(printer.tasks.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn dump_tree_outputs_active_tasks_in_verbose_mode() {
+        let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Verbose);
+
+        let out = capture_stdout(|| {
+            printer.intro("build");
+            printer.intro("test");
+            printer.dump_tree();
+        });
+
+        assert!(out.contains("Active tasks"));
+        assert!(out.contains("build"));
+        assert!(out.contains("test"));
     }
 }
 
@@ -342,7 +344,7 @@ mod timing_tests {
     use std::time::Duration;
 
     #[test]
-    fn outro_prints_timing_information() {
+    fn outro_prints_timing_information_in_verbose_mode() {
         let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Verbose);
 
         let out = capture_stdout(|| {
@@ -353,8 +355,6 @@ mod timing_tests {
 
         assert!(out.contains("timed-task"));
         assert!(out.contains("finished"));
-
-        // Expect timing suffix
         assert!(
             out.contains("took"),
             "Expected timing information like '(took 20ms)' but got: {out}"
@@ -362,7 +362,7 @@ mod timing_tests {
     }
 
     #[test]
-    fn nested_timing_is_independent() {
+    fn nested_timing_is_independent_for_inner_and_outer_tasks() {
         let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Verbose);
 
         let out = capture_stdout(|| {
@@ -380,12 +380,117 @@ mod timing_tests {
         assert!(out.contains("inner"));
         assert!(out.contains("inner-done"));
         assert!(out.contains("outer-done"));
+        assert!(out.contains("took"));
+    }
 
-        // Both should have timing suffixes
-        let inner_has_timing = out.contains("inner-done") && out.contains("took");
-        let outer_has_timing = out.contains("outer-done") && out.contains("took");
+    #[test]
+    fn quiet_mode_still_prints_timing_summaries_for_outro_and_done() {
+        config::setquiet(true);
+        let printer = make_printer(SimpleLogger, LogFormat::Text, Verbosity::Quiet);
 
-        assert!(inner_has_timing, "Inner task missing timing");
-        assert!(outer_has_timing, "Outer task missing timing");
+        let out = capture_stdout(|| {
+            printer.intro("quiet-task");
+            std::thread::sleep(Duration::from_millis(20));
+            printer.outro("quiet-outro");
+
+            printer.intro("quiet-task");
+            std::thread::sleep(Duration::from_millis(20));
+            printer.done();
+        });
+
+        println!("{out}");
+
+        // In quiet mode, intro is suppressed but outro timing summary is still printed.
+        assert!(out.contains("quiet-outro"));
+        assert!(out.contains("Done!"));
+        assert!(out.contains("took"));
+    }
+}
+
+// ============================================================================
+// 6. PROGRESS API BEHAVIOR TESTS
+// ============================================================================
+mod progress_behavior_tests {
+    use super::*;
+    use std::sync::Once;
+
+    static INIT_LOGGER: Once = Once::new();
+
+    fn ensure_global_logger() {
+        INIT_LOGGER.call_once(|| {
+            let printer = Printer::new(SimpleLogger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+            crate::logging::set_logger(printer);
+        });
+    }
+
+    #[test]
+    fn progress_emits_intro_step_and_done_via_global_logger() {
+        ensure_global_logger();
+
+        let out = capture_stdout(|| {
+            let mut p = crate::logging::L.progress("Downloading");
+            p.update(1, 10);
+            p.tick();
+            p.finish("Done");
+        });
+
+        assert!(out.contains("Downloading"));
+        assert!(out.contains("1/10"));
+        assert!(out.contains("2/10"));
+        assert!(out.contains("Done"));
+    }
+}
+
+// ============================================================================
+// 7. DEV-MODE BANNER (ROADMAP-LIKE, BUT IMPLEMENTED)
+// ============================================================================
+mod dev_mode_banner_tests {
+    #[test]
+    #[ignore]
+    fn dev_mode_banner_prints_when_rust_log_is_debug_or_trace() {
+        // This is tricky to test reliably because `init()` is global and only runs once.
+        // Placeholder: when run in isolation with RUST_LOG=debug or trace, we expect
+        // a banner containing the project name to be printed to stdout.
+        //
+        // You can turn this into a real test by:
+        //   - spawning a subprocess with RUST_LOG=debug
+        //   - capturing its stdout
+        //   - asserting the banner is present
+        assert!(true);
+    }
+}
+
+// ============================================================================
+// 8. ROADMAP FEATURE PLACEHOLDERS (IGNORED)
+// ============================================================================
+mod roadmap_behavior_tests {
+    #[test]
+    #[ignore]
+    fn plugin_system_runtime_behavior_not_yet_implemented() {
+        assert!(true);
+    }
+
+    #[test]
+    #[ignore]
+    fn compile_time_stripping_runtime_behavior_not_yet_implemented() {
+        assert!(true);
+    }
+
+    #[test]
+    #[ignore]
+    fn log_capture_runtime_behavior_not_yet_implemented() {
+        assert!(true);
+    }
+
+    #[test]
+    #[ignore]
+    fn opentelemetry_runtime_behavior_not_yet_implemented() {
+        assert!(true);
+    }
+
+    #[test]
+    #[ignore]
+    fn sampling_runtime_behavior_not_yet_implemented() {
+        assert!(true);
     }
 }

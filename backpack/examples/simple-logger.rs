@@ -72,7 +72,7 @@ fn main() {
     simulate_work(150);
     step("Starting worker threads");
     simulate_work(200);
-    done("Server ready");
+    done();
 
     // Debug/trace messages (only visible in verbose mode)
     debug("Debug: Connection pool size: 10");

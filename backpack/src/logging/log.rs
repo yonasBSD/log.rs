@@ -28,8 +28,8 @@ pub fn outro(msg: &str) {
     log().outro(msg);
 }
 
-pub fn done(msg: &str) {
-    log().done(msg);
+pub fn done() {
+    log().done();
 }
 
 pub fn step(msg: &str) {

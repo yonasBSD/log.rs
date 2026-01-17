@@ -57,8 +57,8 @@ mod logger_tests {
             format!("OUTRO: {}", m)
         }
 
-        fn done_raw(&self, m: &str) -> String {
-            format!("DONE: {}", m)
+        fn done_raw(&self) -> String {
+            format!("DONE!")
         }
 
         fn step_raw(&self, m: &str) -> String {
@@ -102,27 +102,37 @@ mod logger_tests {
             assert_eq!(logger.err("test"), "ERR: test");
             assert_eq!(logger.info("test"), Some("INFO: test".to_string()));
             assert_eq!(logger.dim("test"), Some("DIM: test".to_string()));
+            assert_eq!(logger.intro("test"), Some("INTRO: test".to_string()));
+            assert_eq!(logger.outro("test"), Some("OUTRO: test".to_string()));
+            assert_eq!(logger.done(), Some("DONE!".to_string()));
+            assert_eq!(logger.step("test"), Some("STEP: test".to_string()));
         }
 
         #[test]
-        fn test_quiet_mode_suppresses_messages() {
+        fn test_quiet_mode_suppresses_most_messages_but_not_outro_done_or_errors() {
             let logger = MockLogger::new(Verbosity::Quiet);
 
-            // These should be suppressed
+            // Suppressed in quiet mode
             assert_eq!(logger.ok("test"), None);
             assert_eq!(logger.warn("test"), None);
             assert_eq!(logger.info("test"), None);
             assert_eq!(logger.dim("test"), None);
             assert_eq!(logger.intro("test"), None);
-            assert_eq!(logger.outro("test"), None);
             assert_eq!(logger.step("test"), None);
+            assert_eq!(logger.debug("test"), None);
+            assert_eq!(logger.trace("test"), None);
+
+            // Outro and done are *not* suppressed in quiet mode so that quiet builds/tests
+            // can still show timing summaries.
+            assert_eq!(logger.outro("test"), Some("OUTRO: test".to_string()));
+            assert_eq!(logger.done(), Some("DONE!".to_string()));
 
             // Errors are never suppressed
             assert_eq!(logger.err("test"), "ERR: test");
         }
 
         #[test]
-        fn test_verbose_mode_shows_debug() {
+        fn test_verbose_mode_shows_debug_and_trace() {
             let logger = MockLogger::new(Verbosity::Verbose);
 
             assert_eq!(logger.debug("test"), Some("DEBUG: test".to_string()));
@@ -130,7 +140,7 @@ mod logger_tests {
         }
 
         #[test]
-        fn test_normal_mode_hides_debug() {
+        fn test_normal_mode_hides_debug_and_trace() {
             let logger = MockLogger::new(Verbosity::Normal);
 
             assert_eq!(logger.debug("test"), None);
@@ -138,7 +148,7 @@ mod logger_tests {
         }
 
         #[test]
-        fn test_trace_mode_shows_all() {
+        fn test_trace_mode_shows_all_verbose_signals() {
             let logger = MockLogger::new(Verbosity::Trace);
 
             assert!(logger.is_verbose());
@@ -155,7 +165,6 @@ mod logger_tests {
         fn test_simple_logger_formats() {
             let logger = crate::logging::SimpleLogger;
 
-            // Test basic formatting (these will include unicode symbols)
             assert!(logger.ok_raw("test").contains("test"));
             assert!(logger.warn_raw("test").contains("test"));
             assert!(logger.err_raw("test").contains("test"));
@@ -184,7 +193,7 @@ mod logger_tests {
         }
     }
 
-    // Test ModernLogger formatting
+    // Test ModernLogger formatting (including emoji refinements)
     mod modern_logger_tests {
         use super::*;
 
@@ -205,12 +214,12 @@ mod logger_tests {
 
             assert!(logger.intro_raw("test").starts_with("→"));
             assert!(logger.outro_raw("test").starts_with("✔"));
-            assert!(logger.done_raw("test").starts_with("✔"));
+            assert!(logger.done_raw().starts_with("✔"));
             assert!(logger.step_raw("test").starts_with("⠿"));
         }
 
         #[test]
-        fn test_modern_logger_debug_markers() {
+        fn test_modern_logger_debug_and_trace_markers() {
             let logger = ModernLogger;
 
             assert!(logger.debug_raw("test").starts_with("🔍"));
@@ -227,7 +236,6 @@ mod logger_tests {
             let logger = MockLogger::new(Verbosity::Normal);
             let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
 
-            // Verify printer was created (basic smoke test)
             assert_eq!(printer.tasks.lock().unwrap().len(), 0);
             assert_eq!(printer.steps.lock().unwrap().len(), 0);
         }
@@ -248,8 +256,33 @@ mod logger_tests {
             assert_eq!(printer.format, LogFormat::Text);
         }
 
-        // Note: Testing actual output is done in behavior_tests.rs
-        // using gag to capture stdout/stderr.
+        #[test]
+        fn test_printer_task_stack_initially_empty() {
+            let logger = MockLogger::new(Verbosity::Verbose);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            assert!(printer.tasks.lock().unwrap().is_empty());
+        }
+
+        #[test]
+        fn test_printer_step_stack_initially_empty() {
+            let logger = MockLogger::new(Verbosity::Verbose);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            assert!(printer.steps.lock().unwrap().is_empty());
+        }
+
+        #[test]
+        fn test_printer_info_with_fields_compiles_and_uses_fields_type() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Json, Verbosity::Normal);
+
+            let mut fields = Fields::new();
+            fields.insert("user_id".to_string(), "123".to_string());
+            fields.insert("role".to_string(), "admin".to_string());
+
+            printer.info_with_fields("User logged in", fields);
+        }
     }
 
     // Test global logger functionality
@@ -257,10 +290,7 @@ mod logger_tests {
         use super::*;
         use std::sync::{Arc, OnceLock};
 
-        //
         // A shadow global used ONLY for testing.
-        // This avoids interfering with the real LOGGER in logging/mod.rs.
-        //
         static TEST_LOGGER: OnceLock<Arc<dyn ScreenLogger + Send + Sync>> = OnceLock::new();
 
         struct TestLogger;
@@ -273,15 +303,13 @@ mod logger_tests {
             fn dim(&self, _m: &str) {}
             fn intro(&self, _m: &str) {}
             fn outro(&self, _m: &str) {}
-            fn done(&self, _m: &str) {}
+            fn done(&self) {}
             fn step(&self, _m: &str) {}
             fn debug(&self, _m: &str) {}
             fn trace(&self, _m: &str) {}
+            fn dump_tree(&self) {}
         }
 
-        //
-        // A local version of log() that uses TEST_LOGGER instead of the real global.
-        //
         fn test_log() -> &'static Arc<dyn ScreenLogger + Send + Sync> {
             TEST_LOGGER.get().expect("Logger not initialized")
         }
@@ -289,35 +317,24 @@ mod logger_tests {
         #[test]
         #[should_panic(expected = "Logger not initialized")]
         fn test_log_panics_when_not_initialized() {
-            // Ensure the test logger is empty
             assert!(TEST_LOGGER.get().is_none());
-
-            // This should panic
             let _ = test_log();
         }
 
         #[test]
         fn test_set_logger_accepts_valid_logger() {
-            // Initialize the test logger
             let _ = TEST_LOGGER.set(Arc::new(TestLogger));
-
-            // Retrieve it
             let logger = test_log();
-
-            // Call a method to ensure dispatch works
             logger.ok("hello");
-
-            // If we reach here, the logger works
             assert!(true);
         }
     }
 
-    // Test edge cases
+    // Edge cases
     #[test]
     fn test_empty_message() {
         let logger = MockLogger::new(Verbosity::Normal);
 
-        // Should handle empty messages gracefully
         assert_eq!(logger.ok(""), Some("OK: ".to_string()));
         assert_eq!(logger.err(""), "ERR: ");
     }
@@ -332,54 +349,63 @@ mod logger_tests {
         assert!(result.unwrap().len() > 10000);
     }
 
-    // Test verbosity transitions
     #[test]
     fn test_verbosity_hierarchy() {
-        // Quiet < Normal < Verbose < Trace
         let quiet = MockLogger::new(Verbosity::Quiet);
         let normal = MockLogger::new(Verbosity::Normal);
         let verbose = MockLogger::new(Verbosity::Verbose);
         let trace = MockLogger::new(Verbosity::Trace);
 
-        // Quiet suppresses everything except errors
         assert!(quiet.is_quiet());
         assert!(!quiet.is_verbose());
 
-        // Normal shows standard messages
         assert!(!normal.is_quiet());
         assert!(!normal.is_verbose());
 
-        // Verbose shows debug
         assert!(!verbose.is_quiet());
         assert!(verbose.is_verbose());
 
-        // Trace shows trace
         assert!(!trace.is_quiet());
         assert!(trace.is_verbose());
     }
 
-    // Test TimedSpan behavior through Printer
-    #[test]
-    fn test_task_stack_management() {
-        let logger = MockLogger::new(Verbosity::Verbose);
-        let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+    // Roadmap feature placeholders (ignored until implemented)
+    mod roadmap_feature_tests {
+        #[test]
+        #[ignore]
+        fn plugin_system_not_yet_implemented() {
+            // Placeholder for future plugin system tests.
+            // Expected: ability to register custom formatters/backends.
+            assert!(true);
+        }
 
-        // Initially empty
-        assert_eq!(printer.tasks.lock().unwrap().len(), 0);
+        #[test]
+        #[ignore]
+        fn compile_time_log_level_stripping_not_yet_implemented() {
+            // Placeholder for future compile-time stripping tests.
+            assert!(true);
+        }
 
-        // Note: We can't directly test intro/outro without capturing output
-        // but we can verify the stack exists and is accessible
-        assert!(printer.tasks.lock().unwrap().is_empty());
-    }
+        #[test]
+        #[ignore]
+        fn log_capture_api_not_yet_implemented() {
+            // Placeholder for future log capture API tests.
+            assert!(true);
+        }
 
-    #[test]
-    fn test_step_stack_management() {
-        let logger = MockLogger::new(Verbosity::Verbose);
-        let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+        #[test]
+        #[ignore]
+        fn opentelemetry_integration_not_yet_implemented() {
+            // Placeholder for future OpenTelemetry integration tests.
+            assert!(true);
+        }
 
-        // Initially empty
-        assert_eq!(printer.steps.lock().unwrap().len(), 0);
-        assert!(printer.steps.lock().unwrap().is_empty());
+        #[test]
+        #[ignore]
+        fn sampling_not_yet_implemented() {
+            // Placeholder for future sampling tests.
+            assert!(true);
+        }
     }
 }
 
@@ -392,7 +418,6 @@ mod integration_tests {
     fn test_simple_logger_workflow() {
         let logger = crate::logging::SimpleLogger;
 
-        // Simulate a typical workflow
         let intro = logger.intro_raw("Starting deployment");
         assert!(intro.contains("Starting deployment"));
 
@@ -423,11 +448,9 @@ mod integration_tests {
 
     #[test]
     fn test_error_always_visible() {
-        // Errors should be visible in all verbosity modes
         let quiet = crate::logging::SimpleLogger;
         let normal = crate::logging::SimpleLogger;
 
-        // Both should format errors the same way
         let err1 = quiet.err_raw("Critical error");
         let err2 = normal.err_raw("Critical error");
 

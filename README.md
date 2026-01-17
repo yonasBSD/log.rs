@@ -47,6 +47,24 @@
 - `ModernLogger`: Beautiful unicode for modern terminals
 - Extensible formatter trait for custom styles
 
+### 📊 Feature Matrix
+
+A comparison of the three built‑in output styles: **SimpleLogger**, **ModernLogger**, and **JSON mode**.
+
+| Capability | SimpleLogger | ModernLogger | JSON Mode |
+|-----------|--------------|--------------|-----------|
+| Human‑friendly text output | ✔ Yes | ✔ Yes (rich CLI style) | ✖ No |
+| Machine‑readable output | ✖ No | ✖ No | ✔ Yes (structured JSON) |
+| ANSI colors | ✔ Yes (optional) | ✔ Yes | ✖ No |
+| Unicode symbols | ✔ Basic | ✔ Polished (cliclack‑style) | ✖ Not applicable |
+| Quiet‑mode suppression | ✔ Yes | ✔ Yes | ✔ Yes |
+| Verbose/trace support | ✔ Yes | ✔ Yes | ✔ Yes |
+| Structured fields | ✖ Ignored | ✖ Ignored | ✔ Included in JSON |
+| Progress API compatibility | ✔ Yes | ✔ Yes | ✔ Emits JSON events |
+| Task tree introspection | ✔ Text output | ✔ Text output | ✔ JSON output |
+| Best for | Simple CLIs, scripts | Polished CLIs, user‑facing tools | CI, log aggregation, automation |
+
+
 ---
 
 ## 🚀 Quick Start
@@ -320,6 +338,27 @@ cargo test banner_tests
 # Run with output
 cargo test -- --nocapture
 ```
+
+---
+
+# 📋 Roadmap
+
+A quick reference table summarizing the major enhancements planned for the logger.
+
+| Feature | Description | Status |
+|--------|-------------|--------|
+| **Structured Fields** | Attach key/value metadata to any log call for richer JSON output and better machine parsing. | Planned |
+| **Progress API** | Lightweight progress handle for long-running tasks with `update`, `tick`, and `finish`. | Planned |
+| **Task Tree Visualizer** | Dump active tasks and steps with timing information in verbose/trace mode. | Partial |
+| **Quiet‑But‑Timed Mode** | Quiet mode still prints timing summaries for tasks and steps. | Planned |
+| **Plugin System for Custom Formatters** | Allow users to register custom formatters, themes, or output styles. | Planned |
+| **Compile‑Time Log‑Level Stripping** | Macros that compile to nothing unless enabled, keeping release builds lean. | Planned |
+| **Log Capture API for Tests** | Capture logs programmatically for assertions in unit tests. | Planned |
+| **OpenTelemetry Integration** | Optional feature to export spans and events to tracing backends like Jaeger or Honeycomb. | Planned |
+| **Sampling for High‑Volume Logs** | Prevent log floods by sampling trace/debug events. | Planned |
+| **Emoji & Symbol Refinement** | Improved glyphs for debug/trace to enhance readability. | Complete |
+| **Developer‑Mode Banner** | Friendly banner shown when running with `RUST_LOG=debug` or `trace`. | Complete |
+
 
 ---
 

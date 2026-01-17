@@ -1,0 +1,8 @@
+# Keep method chains multi-line
+#chain_width = 0
+
+# Keep function calls multi-line
+#fn_call_width = 0
+
+# Keep boolean expressions multi-line
+#max_width = 120

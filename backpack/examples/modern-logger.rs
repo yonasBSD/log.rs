@@ -1,4 +1,3 @@
-// examples/modern-logger.rs
 //! Modern Logger Example
 //!
 //! Demonstrates the ModernLogger with beautiful unicode symbols and modern

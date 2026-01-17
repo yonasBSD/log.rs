@@ -1,4 +1,3 @@
-// examples/simple-logger.rs
 //! Simple Logger Example
 //!
 //! Demonstrates the SimpleLogger with basic ASCII symbols and no-frills output.
@@ -20,7 +19,7 @@ use std::time::Duration;
 fn main() {
     // Parse command line arguments for verbosity
     let args: Vec<String> = std::env::args().collect();
-    let verbosity = if args.contains(&"-q".to_string()) {
+    let verbosity: Verbosity = if args.contains(&"-q".to_string()) {
         Verbosity::Quiet
     } else if args.contains(&"-vv".to_string()) {
         Verbosity::Trace

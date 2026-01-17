@@ -1,4 +1,3 @@
-// examples/modern-logger.rs
 //! Modern Logger Example (with structured fields)
 
 use log_rs::{

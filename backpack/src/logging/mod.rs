@@ -172,10 +172,12 @@ impl LogProxy {
 
 use crate::config;
 use once_cell::sync::OnceCell;
-use std::{collections::HashMap, sync::Arc, sync::Mutex, time::Instant};
+use std::{collections::BTreeMap, sync::Arc, sync::Mutex, time::Instant};
 use terminal_banner::Banner;
-use tracing::{debug, error, info, span, span::Span, trace, warn, Level};
-use tracing_subscriber::{filter::LevelFilter, fmt::writer::BoxMakeWriter, Layer, Registry, prelude::*};
+use tracing::{Level, debug, error, info, span, span::Span, trace, warn};
+use tracing_subscriber::{
+    Layer, Registry, filter::LevelFilter, fmt::writer::BoxMakeWriter, prelude::*,
+};
 
 const PROJECT_NAME: &str = env!("CARGO_PKG_NAME");
 const PROJECT_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
@@ -261,7 +263,7 @@ pub enum LogFormat {
 }
 
 /// Structured fields attached to a log event.
-pub type Fields = HashMap<String, String>;
+pub type Fields = BTreeMap<String, String>;
 
 /// A span that tracks when it was entered so we can compute
 /// how long the task took when `outro()` / `done()` is called.
@@ -510,6 +512,8 @@ pub trait RenderBackend {
     fn render_warning(&self, msg: &str) -> anyhow::Result<()>;
     fn render_intro(&self, msg: &str) -> anyhow::Result<()>;
     fn render_outro(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_debug(&self, msg: &str) -> anyhow::Result<()>;
+    fn render_trace(&self, msg: &str) -> anyhow::Result<()>;
 }
 
 /// A simple backend that renders to stdout/stderr.
@@ -555,6 +559,16 @@ impl RenderBackend for SimpleBackend {
         println!("{msg}");
         Ok(())
     }
+
+    fn render_debug(&self, msg: &str) -> anyhow::Result<()> {
+        eprintln!("{msg}");
+        Ok(())
+    }
+
+    fn render_trace(&self, msg: &str) -> anyhow::Result<()> {
+        eprintln!("{msg}");
+        Ok(())
+    }
 }
 
 /// A backend that renders using cliclack's rich CLI primitives.
@@ -598,6 +612,16 @@ impl RenderBackend for ModernBackend {
 
     fn render_outro(&self, msg: &str) -> anyhow::Result<()> {
         cliclack::outro(msg)?;
+        Ok(())
+    }
+
+    fn render_debug(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::remark(msg)?;
+        Ok(())
+    }
+
+    fn render_trace(&self, msg: &str) -> anyhow::Result<()> {
+        cliclack::log::remark(msg)?;
         Ok(())
     }
 }
@@ -710,62 +734,6 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
             verbosity,
         }
     }
-
-    #[allow(clippy::unused_self)]
-    fn emit_json(&self, level: &str, message: &str) {
-        let obj = serde_json::json!({
-            "level": level,
-            "message": message,
-            "timestamp": chrono::Utc::now().to_rfc3339(),
-        });
-
-        match level {
-            "error" => eprintln!("{obj}"),
-            _ => println!("{obj}"),
-        }
-    }
-
-    #[allow(clippy::unused_self)]
-    fn emit_json_with_fields(&self, level: &str, message: &str, fields: &Fields) {
-        let obj = serde_json::json!({
-            "level": level,
-            "message": message,
-            "timestamp": chrono::Utc::now().to_rfc3339(),
-            "fields": fields,
-        });
-
-        match level {
-            "error" => eprintln!("{obj}"),
-            _ => println!("{obj}"),
-        }
-    }
-
-    fn dump_task_tree(&self) {
-        if !self.inner.is_verbose() {
-            return;
-        }
-
-        let tasks = self.tasks.lock().unwrap();
-        if tasks.is_empty() {
-            println!("(no active tasks)");
-            return;
-        }
-
-        println!("Active tasks:");
-        for (i, t) in tasks.iter().enumerate() {
-            let elapsed = t.start.elapsed();
-            let timing = format_duration(elapsed);
-            println!("  {}. {} (started, +{})", i + 1, t.label, timing);
-        }
-    }
-
-    /// Convenience: log with structured fields in JSON mode.
-    pub fn info_with_fields(&self, m: &str, fields: Fields) {
-        match self.format {
-            LogFormat::Json => self.emit_json_with_fields("info", m, &fields),
-            LogFormat::Text => self.info(m),
-        }
-    }
 }
 
 impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
@@ -773,7 +741,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
         if let Some(s) = self.inner.intro(m) {
             match self.format {
                 LogFormat::Json => {
-                    self.emit_json("info", &s);
+                    self.emit_json(LogLevel::Info, &s);
                 }
                 LogFormat::Text => {
                     let _ = self.backend.render_intro(&s);
@@ -795,7 +763,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn outro(&self, m: &str) {
         if let Some(s) = self.inner.outro(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("info", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Info, &s),
                 LogFormat::Text => {
                     self.steps.lock().unwrap().clear();
 
@@ -825,7 +793,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn done(&self) {
         if let Some(s) = self.inner.done() {
             match self.format {
-                LogFormat::Json => self.emit_json("info", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Info, &s),
                 LogFormat::Text => {
                     self.steps.lock().unwrap().clear();
 
@@ -856,7 +824,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
         if let Some(s) = self.inner.step(m) {
             match self.format {
                 LogFormat::Json => {
-                    self.emit_json("info", &s);
+                    self.emit_json(LogLevel::Info, &s);
                 }
                 LogFormat::Text => {
                     let _ = self.backend.render_step(&s);
@@ -874,7 +842,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn ok(&self, m: &str) {
         if let Some(s) = self.inner.ok(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("info", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Info, &s),
                 LogFormat::Text => {
                     let _ = self.backend.render_success(&s);
                 }
@@ -885,7 +853,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn warn(&self, m: &str) {
         if let Some(s) = self.inner.warn(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("warn", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Warn, &s),
                 LogFormat::Text => {
                     let _ = self.backend.render_warning(&s);
                     warn!("{s}");
@@ -898,7 +866,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
         let s = self.inner.err(m);
 
         match self.format {
-            LogFormat::Json => self.emit_json("error", &s),
+            LogFormat::Json => self.emit_json(LogLevel::Error, &s),
             LogFormat::Text => {
                 let _ = self.backend.render_error(&s);
                 error!("{s}");
@@ -909,7 +877,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn info(&self, m: &str) {
         if let Some(s) = self.inner.info(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("info", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Info, &s),
                 LogFormat::Text => {
                     let _ = self.backend.render_info(&s);
                 }
@@ -920,7 +888,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn dim(&self, m: &str) {
         if let Some(s) = self.inner.dim(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("debug", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Debug, &s),
                 LogFormat::Text => {
                     let _ = self.backend.render_remark(&s);
                 }
@@ -931,7 +899,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn debug(&self, m: &str) {
         if let Some(s) = self.inner.debug(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("debug", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Debug, &s),
                 LogFormat::Text => {
                     debug!("{s}");
                 }
@@ -940,11 +908,9 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     }
 
     fn trace(&self, m: &str) {
-        if let Some(s) = self.inner.trace(m)
-            && self.verbosity == Verbosity::Trace
-        {
+        if let Some(s) = self.inner.trace(m) {
             match self.format {
-                LogFormat::Json => self.emit_json("trace", &s),
+                LogFormat::Json => self.emit_json(LogLevel::Trace, &s),
                 LogFormat::Text => {
                     trace!("{s}");
                 }
@@ -954,6 +920,234 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
 
     fn dump_tree(&self) {
         self.dump_task_tree();
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Structured Fields
+// -----------------------------------------------------------------------------
+
+#[derive(Copy, Clone, Debug)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+    Debug,
+    Trace,
+}
+
+impl LogLevel {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LogLevel::Info => "info",
+            LogLevel::Warn => "warn",
+            LogLevel::Error => "error",
+            LogLevel::Debug => "debug",
+            LogLevel::Trace => "trace",
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// LogEvent: builder for structured fields, emits on Drop
+// -----------------------------------------------------------------------------
+pub struct LogEvent<'a, L: FormatLogger, B: RenderBackend> {
+    pub(crate) printer: &'a Printer<L, B>,
+    pub(crate) level: LogLevel,
+    pub(crate) message: String,
+    pub(crate) fields: Fields,
+    pub(crate) emitted: bool,
+}
+
+impl<'a, L: FormatLogger, B: RenderBackend> LogEvent<'a, L, B> {
+    /// Constructor used by Printer builder APIs
+    pub fn new(printer: &'a Printer<L, B>, level: LogLevel, msg: &str) -> Self {
+        Self {
+            printer,
+            level,
+            message: msg.to_string(),
+            fields: Fields::new(),
+            emitted: false,
+        }
+    }
+
+    /// Add a single structured field
+    pub fn field(mut self, key: impl Into<String>, value: impl ToString) -> Self {
+        self.fields.insert(key.into(), value.to_string());
+        self
+    }
+
+    /// Add multiple structured fields
+    pub fn fields<I, K, V>(mut self, iter: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: Into<String>,
+        V: ToString,
+    {
+        for (k, v) in iter {
+            self.fields.insert(k.into(), v.to_string());
+        }
+        self
+    }
+
+    /// Optional explicit emission (rarely needed)
+    pub fn emit(mut self) {
+        if !self.emitted {
+            self.printer
+                .emit_event(self.level, &self.message, self.fields.clone());
+            self.emitted = true;
+        }
+    }
+}
+
+impl<'a, L: FormatLogger, B: RenderBackend> Drop for LogEvent<'a, L, B> {
+    fn drop(&mut self) {
+        if self.emitted {
+            return;
+        }
+
+        // Take fields so we don't clone
+        let fields = std::mem::take(&mut self.fields);
+
+        self.printer.emit_event(self.level, &self.message, fields);
+        self.emitted = true;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Printer: unified emit_event, JSON helpers, and builder-style APIs
+// -----------------------------------------------------------------------------
+impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
+    // -------------------------------------------------------------------------
+    // JSON emission (single unified implementation)
+    // -------------------------------------------------------------------------
+    fn emit_json_fields(&self, level: LogLevel, message: &str, fields: Option<&Fields>) {
+        let mut obj = serde_json::json!({
+            "level": level.as_str(),
+            "message": message,
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        });
+
+        if let Some(f) = fields
+            && !f.is_empty()
+        {
+            obj["fields"] = serde_json::to_value(f).unwrap();
+        }
+
+        match level {
+            LogLevel::Error => eprintln!("{obj}"),
+            _ => println!("{obj}"),
+        }
+    }
+
+    fn emit_json(&self, level: LogLevel, message: &str) {
+        self.emit_json_fields(level, message, None);
+    }
+
+    // -------------------------------------------------------------------------
+    // Public: structured JSON logging (used by Drop-based LogEvent)
+    // -------------------------------------------------------------------------
+    pub fn emit_event(&self, level: LogLevel, msg: &str, fields: Fields) {
+        match self.format {
+            LogFormat::Json => self.emit_json_fields(level, msg, Some(&fields)),
+            LogFormat::Text => self.emit_text(level, msg),
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Text-mode emission
+    // -------------------------------------------------------------------------
+    fn emit_text(&self, level: LogLevel, msg: &str) {
+        match level {
+            LogLevel::Info => {
+                if let Some(s) = self.inner.info(msg) {
+                    let _ = self.backend.render_info(&s);
+                }
+            }
+            LogLevel::Warn => {
+                if let Some(s) = self.inner.warn(msg) {
+                    let _ = self.backend.render_warning(&s);
+                }
+            }
+            LogLevel::Error => {
+                let s = self.inner.err(msg);
+                let _ = self.backend.render_error(&s);
+            }
+            LogLevel::Debug => {
+                if matches!(self.verbosity, Verbosity::Verbose | Verbosity::Trace)
+                    && let Some(s) = self.inner.debug(msg)
+                {
+                    let _ = self.backend.render_debug(&s);
+                }
+            }
+            LogLevel::Trace => {
+                if self.verbosity == Verbosity::Trace
+                    && let Some(s) = self.inner.trace(msg)
+                {
+                    let _ = self.backend.render_trace(&s);
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Convenience: legacy API for structured fields
+    // -------------------------------------------------------------------------
+    pub fn info_with_fields(&self, m: &str, fields: Fields) {
+        match self.format {
+            LogFormat::Json => self.emit_json_fields(LogLevel::Info, m, Some(&fields)),
+            LogFormat::Text => {
+                // In text mode, fields are ignored — consistent with Drop-based LogEvent
+                let _ = self.inner.info(m).map(|s| self.backend.render_info(&s));
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Builder-style APIs (Drop-based structured logging)
+    // -------------------------------------------------------------------------
+    pub fn info<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+        LogEvent::new(self, LogLevel::Info, msg)
+    }
+
+    pub fn warn<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+        LogEvent::new(self, LogLevel::Warn, msg)
+    }
+
+    pub fn error<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+        LogEvent::new(self, LogLevel::Error, msg)
+    }
+
+    pub fn debug<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+        LogEvent::new(self, LogLevel::Debug, msg)
+    }
+
+    pub fn trace<'a>(&'a self, msg: &str) -> LogEvent<'a, L, B> {
+        LogEvent::new(self, LogLevel::Trace, msg)
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Printer: add dump task tree
+// -----------------------------------------------------------------------------
+impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
+    fn dump_task_tree(&self) {
+        if !self.inner.is_verbose() {
+            return;
+        }
+
+        let tasks = self.tasks.lock().unwrap();
+        if tasks.is_empty() {
+            println!("(no active tasks)");
+            return;
+        }
+
+        println!("Active tasks:");
+        for (i, t) in tasks.iter().enumerate() {
+            let elapsed = t.start.elapsed();
+            let timing = format_duration(elapsed);
+            println!("  {}. {} (started, +{})", i + 1, t.label, timing);
+        }
     }
 }
 

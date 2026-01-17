@@ -134,6 +134,7 @@ mod printing_behavior_tests {
             printer.trace("trace message");
         });
 
+        println!("==========> {err}");
         assert!(err.contains("trace"));
     }
 
@@ -270,12 +271,40 @@ mod json_format_behavior_tests {
             printer.info_with_fields("User logged in", fields);
         });
 
-        let line = out.lines().find(|l| !l.trim().is_empty()).expect("Expected output");
+        let line = out
+            .lines()
+            .find(|l| !l.trim().is_empty())
+            .expect("Expected output");
         let v: serde_json::Value = serde_json::from_str(line).expect("Expected valid JSON");
         assert_eq!(v["message"], "User logged in");
         assert_eq!(v["fields"]["user_id"], "42");
         assert_eq!(v["fields"]["role"], "admin");
     }
+}
+
+// ============================================================================
+// STRUCTURED FIELDS (via drop)
+// ============================================================================
+#[test]
+fn json_mode_structured_fields_via_drop() {
+    let printer = make_printer(SimpleLogger, LogFormat::Json, Verbosity::Normal);
+
+    let out = capture_stdout(|| {
+        printer
+            .info("User logged in")
+            .field("user_id", 7)
+            .field("role", "admin");
+    });
+
+    let line = out
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .expect("Expected output");
+    let v: serde_json::Value = serde_json::from_str(line).expect("Expected valid JSON");
+
+    assert_eq!(v["message"], "User logged in");
+    assert_eq!(v["fields"]["user_id"], "7");
+    assert_eq!(v["fields"]["role"], "admin");
 }
 
 // ============================================================================
@@ -418,7 +447,12 @@ mod progress_behavior_tests {
 
     fn ensure_global_logger() {
         INIT_LOGGER.call_once(|| {
-            let printer = Printer::new(SimpleLogger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+            let printer = Printer::new(
+                SimpleLogger,
+                SimpleBackend,
+                LogFormat::Text,
+                Verbosity::Normal,
+            );
             crate::logging::set_logger(printer);
         });
     }

@@ -272,6 +272,7 @@ mod logger_tests {
             assert!(printer.steps.lock().unwrap().is_empty());
         }
 
+        /*
         #[test]
         fn test_printer_info_with_fields_compiles_and_uses_fields_type() {
             let logger = MockLogger::new(Verbosity::Normal);
@@ -283,6 +284,7 @@ mod logger_tests {
 
             printer.info_with_fields("User logged in", fields);
         }
+        */
     }
 
     // Test global logger functionality
@@ -367,6 +369,61 @@ mod logger_tests {
 
         assert!(!trace.is_quiet());
         assert!(trace.is_verbose());
+    }
+
+    mod structured_fields_tests_drop {
+        use super::*;
+        use gag::BufferRedirect;
+        use std::io::Read;
+
+        fn capture_stdout<F: FnOnce()>(f: F) -> String {
+            let mut buf = Vec::new();
+            let mut redirect = BufferRedirect::stdout().unwrap();
+            f();
+            redirect.read_to_end(&mut buf).unwrap();
+            String::from_utf8(buf).unwrap()
+        }
+
+        #[test]
+        fn json_mode_emits_structured_fields_on_drop() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Json, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("User logged in")
+                    .field("user_id", 42)
+                    .field("role", "admin");
+                // emission happens on Drop
+            });
+
+            let line = out
+                .lines()
+                .find(|l| !l.trim().is_empty())
+                .expect("Expected output");
+            let v: serde_json::Value = serde_json::from_str(line).expect("Expected valid JSON");
+
+            assert_eq!(v["message"], "User logged in");
+            assert_eq!(v["level"], "info");
+            assert_eq!(v["fields"]["user_id"], "42");
+            assert_eq!(v["fields"]["role"], "admin");
+        }
+
+        #[test]
+        fn text_mode_ignores_structured_fields_on_drop() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("User logged in")
+                    .field("user_id", 42)
+                    .field("role", "admin");
+            });
+
+            assert!(out.contains("User logged in"));
+            assert!(!out.contains("\"fields\""));
+        }
     }
 
     // Roadmap feature placeholders (ignored until implemented)

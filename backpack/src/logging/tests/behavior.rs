@@ -8,6 +8,7 @@
 //!   5. New behaviors: quiet-but-timed outro/done, structured fields, progress, task tree
 
 use super::*;
+use crate::config;
 use gag::BufferRedirect;
 use std::io::Read;
 
@@ -268,7 +269,7 @@ mod json_format_behavior_tests {
             let mut fields = Fields::new();
             fields.insert("user_id".to_string(), "42".to_string());
             fields.insert("role".to_string(), "admin".to_string());
-            printer.info_with_fields("User logged in", fields);
+            printer.info_with_fields("User logged in", &fields);
         });
 
         let line = out

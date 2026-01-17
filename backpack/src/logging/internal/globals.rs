@@ -1,12 +1,13 @@
-use crate::logging::{LogProxy, ScreenLogger};
+use crate::logging::*;
 use once_cell::sync::OnceCell;
-use std::sync::Arc;
 
 pub const PROJECT_NAME: &str = env!("CARGO_PKG_NAME");
 pub const PROJECT_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 
 /// A global, thread-safe screen logger.
-pub static LOGGER: OnceCell<Arc<dyn ScreenLogger + Send + Sync>> = OnceCell::new();
+pub trait GlobalLoggerType: EmitsEvents {}
+pub type GlobalLogger = Printer<ModernLogger, ModernBackend>;
+static LOGGER: OnceCell<Box<dyn GlobalLoggerType>> = OnceCell::new();
 
 /// One-time guard for tracing subscriber initialization.
 pub static INIT: OnceCell<()> = OnceCell::new();
@@ -15,11 +16,15 @@ pub static INIT: OnceCell<()> = OnceCell::new();
 pub static L: LogProxy = LogProxy;
 
 /// Set the global logger.
-pub fn set_logger<L: ScreenLogger + Send + Sync + 'static>(logger: L) {
-    let _ = LOGGER.set(Arc::new(logger));
+pub fn set_logger<L: GlobalLoggerType + 'static>(logger: L) {
+    let _ = LOGGER.set(Box::new(logger));
 }
 
 /// Retrieve the global logger.
-pub fn log() -> &'static Arc<dyn ScreenLogger + Send + Sync> {
-    LOGGER.get().expect("Logger not initialized")
+pub fn log<L: GlobalLoggerType>() -> &'static L {
+    LOGGER
+        .get()
+        .expect("Logger not initialized")
+        .downcast_ref::<L>()
+        .expect("Global logger type mismatch")
 }

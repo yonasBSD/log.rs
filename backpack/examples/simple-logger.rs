@@ -9,6 +9,7 @@
 //!   cargo run --example simple-logger -- -v     # verbose mode
 //!   cargo run --example simple-logger -- -q     # quiet mode
 
+
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
     logging::{LogFormat, Printer, SimpleBackend, SimpleLogger, Verbosity, log::*, set_logger},
@@ -30,8 +31,8 @@ fn main() {
     };
 
     // Initialize the logger with SimpleLogger formatter
-    let logger = Printer::new(SimpleLogger, SimpleBackend, LogFormat::Text, verbosity);
-    set_logger(logger);
+    type GlobalLogger = Printer<SimpleLogger, SimpleBackend>;
+    impl GlobalLoggerType for GlobalLogger {}
 
     // Print application banner
     let banner = BannerConfig {

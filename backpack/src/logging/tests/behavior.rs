@@ -7,26 +7,10 @@
 //!   4. JSON/Text formatting behavior under different verbosity levels
 //!   5. New behaviors: quiet-but-timed outro/done, structured fields, progress, task tree
 
+mod common;
+
 use super::*;
 use crate::config;
-use gag::BufferRedirect;
-use std::io::Read;
-
-fn capture_stdout<F: FnOnce()>(f: F) -> String {
-    let mut buf = Vec::new();
-    let mut redirect = BufferRedirect::stdout().unwrap();
-    f();
-    redirect.read_to_end(&mut buf).unwrap();
-    String::from_utf8(buf).unwrap()
-}
-
-fn capture_stderr<F: FnOnce()>(f: F) -> String {
-    let mut buf = Vec::new();
-    let mut redirect = BufferRedirect::stderr().unwrap();
-    f();
-    redirect.read_to_end(&mut buf).unwrap();
-    String::from_utf8(buf).unwrap()
-}
 
 fn make_printer<L: FormatLogger + 'static>(
     inner: L,
@@ -40,7 +24,10 @@ fn make_printer<L: FormatLogger + 'static>(
 // 1. VERBOSITY BEHAVIOR TESTS
 // ============================================================================
 mod verbosity_behavior_tests {
-    use super::*;
+    use super::{
+        common::{capture_stderr, capture_stdout},
+        *,
+    };
 
     #[test]
     fn debug_visible_in_verbose() {
@@ -114,7 +101,10 @@ mod verbosity_behavior_tests {
 // 2. “SOMETHING IS ACTUALLY PRINTED” TESTS
 // ============================================================================
 mod printing_behavior_tests {
-    use super::*;
+    use super::{
+        common::{capture_stderr, capture_stdout},
+        *,
+    };
 
     #[test]
     fn verbose_mode_prints_debug() {
@@ -167,7 +157,7 @@ mod printing_behavior_tests {
 // 3. PRINTER FORWARDING TESTS
 // ============================================================================
 mod printer_forwarding_tests {
-    use super::*;
+    use super::{common::capture_stdout, *};
 
     #[test]
     fn printer_ok_forwards_simplelogger_output() {
@@ -218,7 +208,10 @@ mod printer_forwarding_tests {
 // 4. JSON/TEXT FORMAT BEHAVIOR TESTS
 // ============================================================================
 mod json_format_behavior_tests {
-    use super::*;
+    use super::{
+        common::{capture_stderr, capture_stdout},
+        *,
+    };
 
     #[test]
     fn json_mode_always_prints_valid_json() {
@@ -286,33 +279,37 @@ mod json_format_behavior_tests {
 // ============================================================================
 // STRUCTURED FIELDS (via drop)
 // ============================================================================
-#[test]
-fn json_mode_structured_fields_via_drop() {
-    let printer = make_printer(SimpleLogger, LogFormat::Json, Verbosity::Normal);
+mod structured_fields_tests {
+    use super::{common::capture_stdout, *};
 
-    let out = capture_stdout(|| {
-        printer
-            .info("User logged in")
-            .field("user_id", 7)
-            .field("role", "admin");
-    });
+    #[test]
+    fn json_mode_structured_fields_via_drop() {
+        let printer = make_printer(SimpleLogger, LogFormat::Json, Verbosity::Normal);
 
-    let line = out
-        .lines()
-        .find(|l| !l.trim().is_empty())
-        .expect("Expected output");
-    let v: serde_json::Value = serde_json::from_str(line).expect("Expected valid JSON");
+        let out = capture_stdout(|| {
+            printer
+                .info("User logged in")
+                .field("user_id", 7)
+                .field("role", "admin");
+        });
 
-    assert_eq!(v["message"], "User logged in");
-    assert_eq!(v["fields"]["user_id"], "7");
-    assert_eq!(v["fields"]["role"], "admin");
+        let line = out
+            .lines()
+            .find(|l| !l.trim().is_empty())
+            .expect("Expected output");
+        let v: serde_json::Value = serde_json::from_str(line).expect("Expected valid JSON");
+
+        assert_eq!(v["message"], "User logged in");
+        assert_eq!(v["fields"]["user_id"], "7");
+        assert_eq!(v["fields"]["role"], "admin");
+    }
 }
 
 // ============================================================================
 // 5. NESTED SPAN / TASK TREE / TIMING TESTS
 // ============================================================================
 mod nested_span_tests {
-    use super::*;
+    use super::{common::capture_stdout, *};
 
     #[test]
     fn nested_steps_create_nested_spans_and_clear_on_outro() {
@@ -370,7 +367,7 @@ mod nested_span_tests {
 }
 
 mod timing_tests {
-    use super::*;
+    use super::{common::capture_stdout, *};
     use std::time::Duration;
 
     #[test]
@@ -442,7 +439,10 @@ mod timing_tests {
 // ============================================================================
 /*
 mod progress_behavior_tests {
-    use super::*;
+    use super::{
+        common::{capture_stderr, capture_stdout},
+        *,
+    };
     use std::sync::Once;
 
     static INIT_LOGGER: Once = Once::new();
@@ -450,8 +450,8 @@ mod progress_behavior_tests {
     fn ensure_global_logger() {
         INIT_LOGGER.call_once(|| {
             let printer = Printer::new(
-                SimpleLogger,
-                SimpleBackend,
+                ModernLogger,
+                ModernBackend,
                 LogFormat::Text,
                 Verbosity::Normal,
             );
@@ -464,7 +464,7 @@ mod progress_behavior_tests {
         ensure_global_logger();
 
         let out = capture_stdout(|| {
-            let mut p = crate::logging::L.progress("Downloading");
+            let mut p = crate::logging::log().progress("Downloading");
             p.update(1, 10);
             p.tick();
             p.finish("Done");

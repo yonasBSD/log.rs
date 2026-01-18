@@ -1,0 +1,6 @@
+---
+source: backpack/src/logging/tests/spans/timing.rs
+expression: out
+---
+✓ quiet-outro (took 10ms)
+✓ Done! (took 21ms)

@@ -23,6 +23,7 @@ pub struct Printer<L: FormatLogger, B: RenderBackend> {
     pub steps: Mutex<Vec<Span>>,
     pub format: LogFormat,
     pub verbosity: Verbosity,
+    pub timestamp: Mutex<TimestampMode>,
 }
 
 impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
@@ -44,14 +45,23 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
 
         let _ = crate::logging::init();
 
-        Self {
+        let printer = Self {
             inner,
             backend,
             tasks: Mutex::new(Vec::new()),
             steps: Mutex::new(Vec::new()),
             format,
             verbosity,
+            timestamp: Mutex::new(TimestampMode::Real),
+        };
+
+        // Test-only override for deterministic snapshots
+        #[cfg(test)]
+        {
+            *printer.timestamp.lock().unwrap() = TimestampMode::Disabled;
         }
+
+        printer
     }
 }
 
@@ -87,22 +97,38 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
                     self.steps.lock().unwrap().clear();
 
                     let task = self.tasks.lock().unwrap().pop();
-                    if let Some(TimedSpan { span, start, .. }) = task {
-                        drop(span);
-                        let elapsed = start.elapsed();
-                        let timing = format_duration(elapsed);
 
-                        let msg = if elapsed.as_millis() > 0 {
-                            format!("{s} (took {timing})")
+                    let msg = {
+                        #[cfg(not(test))]
+                        {
+                            if let Some(TimedSpan { span, start, .. }) = task {
+                                drop(span);
+
+                                let elapsed = start.elapsed();
+                                let timing = format_duration(elapsed);
+
+                                if elapsed.as_millis() > 0 {
+                                    format!("{s} (took {timing})")
+                                } else {
+                                    s
+                                }
+                            } else {
+                                s
+                            }
+                        }
+
+                        #[cfg(test)]
+                        if let Some(TimedSpan { .. }) = task {
+                            format!("{s} (took 10ms)")
                         } else {
                             s
-                        };
-
-                        let _ = self.backend.render_outro(&msg);
-
-                        if self.inner.is_verbose() {
-                            info!("{msg}");
                         }
+                    };
+
+                    let _ = self.backend.render_outro(&msg);
+
+                    if self.inner.is_verbose() {
+                        info!("{msg}");
                     }
                 }
             }

@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: text_out
+---
+INFO: Task completed [2merrors=0[0m [2mitems=100[0m

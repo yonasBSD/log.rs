@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: out
+---
+  User logged in [2mrole=admin[0m [2muser_id=7[0m

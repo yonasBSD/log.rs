@@ -1,0 +1,6 @@
+---
+source: backpack/src/logging/tests/integration/integration.rs
+expression: out
+---
+[31m✗[0m Critical error
+[31m✗[0m Critical error

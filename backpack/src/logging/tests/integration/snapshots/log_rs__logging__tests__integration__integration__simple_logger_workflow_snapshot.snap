@@ -1,0 +1,8 @@
+---
+source: backpack/src/logging/tests/integration/integration.rs
+expression: out
+---
+→ Starting deployment
+[36m⠿[0m Building assets
+[36m⠿[0m Uploading files
+✓ Deployment complete

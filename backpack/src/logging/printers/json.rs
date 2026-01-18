@@ -12,8 +12,20 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
         let mut obj = serde_json::json!({
             "level": level.as_str(),
             "message": message,
-            "timestamp": chrono::Utc::now().to_rfc3339(),
         });
+
+        let timestamp = *self.timestamp.lock().unwrap();
+        match timestamp {
+            TimestampMode::Real => {
+                obj["timestamp"] = serde_json::Value::String(chrono::Utc::now().to_rfc3339());
+            }
+            TimestampMode::Disabled => {
+                // do nothing
+            }
+            TimestampMode::Fixed(value) => {
+                obj["timestamp"] = serde_json::Value::String(value.to_string());
+            }
+        }
 
         if let Some(f) = fields
             && !f.is_empty()

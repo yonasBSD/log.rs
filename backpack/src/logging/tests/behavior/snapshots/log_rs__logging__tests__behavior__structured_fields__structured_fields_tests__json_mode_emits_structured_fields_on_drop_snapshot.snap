@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: out
+---
+{"fields":{"role":"admin","user_id":"42"},"level":"info","message":"User logged in"}

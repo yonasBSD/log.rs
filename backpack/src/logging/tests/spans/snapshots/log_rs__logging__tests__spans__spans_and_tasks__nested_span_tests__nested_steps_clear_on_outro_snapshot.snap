@@ -1,0 +1,8 @@
+---
+source: backpack/src/logging/tests/spans/spans_and_tasks.rs
+expression: out
+---
+→ top-level
+[36m⠿[0m first-step
+[36m⠿[0m second-step
+✓ done (took 10ms)

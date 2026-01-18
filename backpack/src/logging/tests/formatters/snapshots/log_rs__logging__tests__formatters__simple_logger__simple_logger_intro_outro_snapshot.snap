@@ -1,0 +1,6 @@
+---
+source: backpack/src/logging/tests/formatters/simple_logger.rs
+expression: out
+---
+intro=→ Starting task
+outro=✓ Task complete

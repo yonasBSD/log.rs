@@ -13,3 +13,10 @@ pub enum LogFormat {
     Text,
     Json,
 }
+
+#[derive(Clone, Copy)]
+pub enum TimestampMode {
+    Real,
+    Disabled,
+    Fixed(&'static str),
+}

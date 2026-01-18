@@ -1,0 +1,7 @@
+---
+source: backpack/src/logging/tests/behavior/json_format.rs
+expression: out
+---
+{"level":"info","message":"→ task"}
+{"level":"info","message":"\u001b[36m⠿\u001b[0m step"}
+{"level":"info","message":"✓ done"}

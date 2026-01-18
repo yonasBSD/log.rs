@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: debug_out
+---
+DEBUG: Request processed [2mcache_hit=true[0m [2mduration_ms=145[0m

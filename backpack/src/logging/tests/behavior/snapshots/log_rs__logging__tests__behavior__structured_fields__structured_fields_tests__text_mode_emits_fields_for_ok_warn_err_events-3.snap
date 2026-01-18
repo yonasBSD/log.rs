@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: err_out
+---
+ERR: Connection failed [2merror_code=500[0m [2mserver=smtp.example.com[0m

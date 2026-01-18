@@ -1,0 +1,8 @@
+---
+source: backpack/src/logging/tests/formatters/simple_logger.rs
+expression: out
+---
+[32m✔[0m ok
+[33m⚠[0m warn
+[31m✗[0m err
+  info

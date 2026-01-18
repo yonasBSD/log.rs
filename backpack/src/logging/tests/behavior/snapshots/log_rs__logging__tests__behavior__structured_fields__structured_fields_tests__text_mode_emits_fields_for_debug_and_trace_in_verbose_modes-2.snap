@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: trace_out
+---
+TRACE: SQL query executed [2mexecution_time_ms=12[0m [2mquery=SELECT * FROM users[0m

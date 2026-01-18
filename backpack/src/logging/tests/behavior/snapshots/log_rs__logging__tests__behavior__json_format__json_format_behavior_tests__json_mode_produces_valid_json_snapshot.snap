@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/json_format.rs
+expression: out
+---
+{"level":"info","message":"\u001b[32m✔\u001b[0m hello"}

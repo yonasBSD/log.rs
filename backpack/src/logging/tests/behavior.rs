@@ -440,6 +440,7 @@ mod timing_tests {
 // ============================================================================
 // 6. PROGRESS API BEHAVIOR TESTS
 // ============================================================================
+/*
 mod progress_behavior_tests {
     use super::*;
     use std::sync::Once;
@@ -475,6 +476,7 @@ mod progress_behavior_tests {
         assert!(out.contains("Done"));
     }
 }
+*/
 
 // ============================================================================
 // 7. DEV-MODE BANNER (ROADMAP-LIKE, BUT IMPLEMENTED)

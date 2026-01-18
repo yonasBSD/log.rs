@@ -121,12 +121,10 @@ pub use loggers::*;
 pub use printers::*;
 pub use progress::*;
 
-/*
 #[cfg(test)]
-#[path = "tests/general.rs"]
-mod general_tests;
+#[path = "tests/unit.rs"]
+mod unit;
 
 #[cfg(test)]
 #[path = "tests/behavior.rs"]
-mod behavior_tests;
-*/
+mod behavior;

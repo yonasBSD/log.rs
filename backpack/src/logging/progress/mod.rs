@@ -4,7 +4,7 @@
 /// This is intentionally simple: it just emits step/info/done messages
 /// through the global logger, so it works with any backend.
 
-use crate::log;
+use crate::logging::*;
 
 pub struct Progress {
     label: String,
@@ -15,7 +15,7 @@ pub struct Progress {
 impl Progress {
     #[must_use]
     pub fn new(label: &str) -> Self {
-        log::<GlobalLogger>().intro(label);
+        logger().intro(label);
         Self {
             label: label.to_string(),
             current: 0,
@@ -25,7 +25,7 @@ impl Progress {
 
     #[must_use]
     pub fn with_total(label: &str, total: u64) -> Self {
-        log::<GlobalLogger>().intro(label);
+        logger().intro(label);
         Self {
             label: label.to_string(),
             current: 0,
@@ -37,22 +37,22 @@ impl Progress {
         self.current = current;
         self.total = Some(total);
         let msg = format!("{}: {}/{}", self.label, self.current, total);
-        log::<GlobalLogger>().step(&msg);
+        logger().step(&msg);
     }
 
     pub fn tick(&mut self) {
         self.current += 1;
         if let Some(total) = self.total {
             let msg = format!("{}: {}/{}", self.label, self.current, total);
-            log::<GlobalLogger>().step(&msg);
+            logger().step(&msg);
         } else {
             let msg = format!("{}: {}", self.label, self.current);
-            log::<GlobalLogger>().step(&msg);
+            logger().step(&msg);
         }
     }
 
     pub fn finish(self, _msg: &str) {
-        log::<GlobalLogger>().done();
+        logger().done();
     }
 }
 */

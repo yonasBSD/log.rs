@@ -273,18 +273,18 @@ mod logger_tests {
         }
 
         /*
-        #[test]
-        fn test_printer_info_with_fields_compiles_and_uses_fields_type() {
-            let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, SimpleBackend, LogFormat::Json, Verbosity::Normal);
+           #[test]
+           fn test_printer_info_with_fields_compiles_and_uses_fields_type() {
+           let logger = MockLogger::new(Verbosity::Normal);
+           let printer = Printer::new(logger, SimpleBackend, LogFormat::Json, Verbosity::Normal);
 
-            let mut fields = Fields::new();
-            fields.insert("user_id".to_string(), "123".to_string());
-            fields.insert("role".to_string(), "admin".to_string());
+           let mut fields = Fields::new();
+           fields.insert("user_id".to_string(), "123".to_string());
+           fields.insert("role".to_string(), "admin".to_string());
 
-            printer.info_with_fields("User logged in", fields);
-        }
-        */
+           printer.info_with_fields("User logged in", fields);
+           }
+           */
     }
 
     // Test global logger functionality
@@ -395,7 +395,7 @@ mod logger_tests {
                     .field("user_id", 42)
                     .field("role", "admin");
                 // emission happens on Drop
-            });
+                });
 
             let line = out
                 .lines()
@@ -419,10 +419,298 @@ mod logger_tests {
                     .info("User logged in")
                     .field("user_id", 42)
                     .field("role", "admin");
-            });
+                });
 
             assert!(out.contains("User logged in"));
             assert!(!out.contains("\"fields\""));
+        }
+        #[test]
+        fn text_mode_emits_structured_fields_on_drop() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("User logged in")
+                    .field("user_id", 42)
+                    .field("role", "admin");
+                });
+
+            assert!(out.contains("User logged in"));
+            assert!(out.contains("user_id=42"));
+            assert!(out.contains("role=admin"));
+        }
+
+#[test]
+        fn text_mode_emits_fields_for_ok_event() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .ok_event("Connected to database")
+                    .field("host", "localhost")
+                    .field("port", 5432);
+                });
+
+            assert!(out.contains("Connected to database"));
+            assert!(out.contains("host=localhost"));
+            assert!(out.contains("port=5432"));
+        }
+
+#[test]
+        fn text_mode_emits_fields_for_warn_event() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .warn_event("Retrying connection")
+                    .field("attempt", 3)
+                    .field("max_attempts", 5);
+                });
+
+            assert!(out.contains("Retrying connection"));
+            assert!(out.contains("attempt=3"));
+            assert!(out.contains("max_attempts=5"));
+        }
+
+#[test]
+        fn text_mode_emits_fields_for_error_event() {
+            use gag::BufferRedirect;
+            use std::io::Read;
+
+            fn capture_stderr<F: FnOnce()>(f: F) -> String {
+                let mut buf = Vec::new();
+                let mut redirect = BufferRedirect::stderr().unwrap();
+                f();
+                redirect.read_to_end(&mut buf).unwrap();
+                String::from_utf8(buf).unwrap()
+            }
+
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stderr(|| {
+                printer
+                    .err_event("Connection failed")
+                    .field("server", "smtp.example.com")
+                    .field("error_code", 500);
+                });
+
+            assert!(out.contains("Connection failed"));
+            assert!(out.contains("server=smtp.example.com"));
+            assert!(out.contains("error_code=500"));
+        }
+
+#[test]
+        fn text_mode_emits_multiple_fields() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("Batch processing complete")
+                    .field("processed", 1250)
+                    .field("failed", 23)
+                    .field("skipped", 5)
+                    .field("duration_ms", 3456);
+                });
+
+            assert!(out.contains("Batch processing complete"));
+            assert!(out.contains("processed=1250"));
+            assert!(out.contains("failed=23"));
+            assert!(out.contains("skipped=5"));
+            assert!(out.contains("duration_ms=3456"));
+        }
+
+#[test]
+        fn text_mode_handles_empty_fields() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer.info("Simple message");
+                // No fields added
+            });
+
+            assert!(out.contains("Simple message"));
+            // Should not have any extra formatting for empty fields
+            assert!(!out.contains("="));
+        }
+
+#[test]
+        fn text_mode_emits_fields_for_debug_in_verbose_mode() {
+            let logger = MockLogger::new(Verbosity::Verbose);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Verbose);
+
+            let out = capture_stdout(|| {
+                printer
+                    .debug_event("Request processed")
+                    .field("duration_ms", 145)
+                    .field("cache_hit", true);
+                });
+
+            assert!(out.contains("Request processed"));
+            assert!(out.contains("duration_ms=145"));
+            assert!(out.contains("cache_hit=true"));
+        }
+
+#[test]
+        fn text_mode_emits_fields_for_trace_in_trace_mode() {
+            let logger = MockLogger::new(Verbosity::Trace);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Trace);
+
+            let out = capture_stdout(|| {
+                printer
+                    .trace_event("SQL query executed")
+                    .field("query", "SELECT * FROM users")
+                    .field("execution_time_ms", 12);
+                });
+
+            assert!(out.contains("SQL query executed"));
+            assert!(out.contains("query=SELECT * FROM users"));
+            assert!(out.contains("execution_time_ms=12"));
+        }
+
+#[test]
+        fn text_mode_handles_string_fields() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .ok_event("Deployment successful")
+                    .field("region", "us-east-1")
+                    .field("environment", "production");
+                });
+
+            assert!(out.contains("Deployment successful"));
+            assert!(out.contains("region=us-east-1"));
+            assert!(out.contains("environment=production"));
+        }
+
+#[test]
+        fn text_mode_handles_numeric_fields() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("Metrics reported")
+                    .field("count", 234)
+                    .field("cpu_percent", 23)
+                    .field("memory_gb", 1.2);
+                });
+
+            assert!(out.contains("Metrics reported"));
+            assert!(out.contains("count=234"));
+            assert!(out.contains("cpu_percent=23"));
+            assert!(out.contains("memory_gb=1.2"));
+        }
+
+#[test]
+        fn text_mode_fields_work_with_step_event() {
+            let logger = MockLogger::new(Verbosity::Trace);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Trace);
+
+            let out = capture_stdout(|| {
+                printer
+                    .step_event("Uploading files")
+                    .field("count", 203)
+                    .field("cdn", "cdn.example.com");
+                });
+
+            assert!(out.contains("Uploading files"));
+            assert!(out.contains("count=203"));
+            assert!(out.contains("cdn=cdn.example.com"));
+        }
+
+#[test]
+        fn text_mode_fields_work_with_intro_event() {
+            let logger = MockLogger::new(Verbosity::Trace);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Trace);
+
+            let out = capture_stdout(|| {
+                printer
+                    .intro_event("Starting deployment")
+                    .field("version", "1.2.3")
+                    .field("target", "production");
+                });
+
+            assert!(out.contains("Starting deployment"));
+            assert!(out.contains("version=1.2.3"));
+            assert!(out.contains("target=production"));
+        }
+
+#[test]
+        fn text_mode_fields_work_with_outro_event() {
+            let logger = MockLogger::new(Verbosity::Trace);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Trace);
+
+            let out = capture_stdout(|| {
+                printer
+                    .outro_event("Deployment complete")
+                    .field("duration_seconds", 45)
+                    .field("status", "success");
+                });
+
+            assert!(out.contains("Deployment complete"));
+            assert!(out.contains("duration_seconds=45"));
+            assert!(out.contains("status=success"));
+        }
+
+#[test]
+        fn text_mode_fields_respect_quiet_mode() {
+            let logger = MockLogger::new(Verbosity::Quiet);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Quiet);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("This should be suppressed")
+                    .field("user_id", 42);
+                });
+
+            // In quiet mode, info messages should be suppressed
+            assert!(!out.contains("This should be suppressed"));
+            assert!(!out.contains("user_id=42"));
+        }
+
+#[test]
+        fn text_mode_fields_comparison_with_json() {
+            let logger_text = MockLogger::new(Verbosity::Normal);
+            let printer_text = Printer::new(logger_text, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let logger_json = MockLogger::new(Verbosity::Normal);
+            let printer_json = Printer::new(logger_json, SimpleBackend, LogFormat::Json, Verbosity::Normal);
+
+            let text_out = capture_stdout(|| {
+                printer_text
+                    .ok_event("Task completed")
+                    .field("items", 100)
+                    .field("errors", 0);
+                });
+
+            let json_out = capture_stdout(|| {
+                printer_json
+                    .ok_event("Task completed")
+                    .field("items", 100)
+                    .field("errors", 0);
+                });
+
+            // Both modes should include the message
+            assert!(text_out.contains("Task completed"));
+            assert!(json_out.contains("Task completed"));
+
+            // Text mode has key=value format
+            assert!(text_out.contains("items=100"));
+            assert!(text_out.contains("errors=0"));
+
+            // JSON mode has structured fields
+            let line = json_out.lines().find(|l| !l.trim().is_empty()).unwrap();
+            let v: serde_json::Value = serde_json::from_str(line).unwrap();
+            assert_eq!(v["fields"]["items"], "100");
+            assert_eq!(v["fields"]["errors"], "0");
         }
     }
 

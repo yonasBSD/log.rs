@@ -9,10 +9,12 @@
 //!   cargo run --example simple-logger -- -v     # verbose mode
 //!   cargo run --example simple-logger -- -q     # quiet mode
 
-
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
-    logging::{LogFormat, Printer, SimpleBackend, SimpleLogger, Verbosity, log::*, set_logger},
+    logging::{
+        LogFormat, ModernBackend, ModernLogger, Printer, SimpleBackend,
+        SimpleLogger, Verbosity, log::*, set_logger,
+    },
 };
 use std::thread;
 use std::time::Duration;
@@ -30,9 +32,15 @@ fn main() {
         Verbosity::Normal
     };
 
-    // Initialize the logger with SimpleLogger formatter
-    type GlobalLogger = Printer<SimpleLogger, SimpleBackend>;
-    impl GlobalLoggerType for GlobalLogger {}
+    let format = if args.contains(&"--json".to_string()) {
+        LogFormat::Json
+    } else {
+        LogFormat::Text
+    };
+
+    // Initialize the logger with ModernLogger formatter
+    let logger = Printer::new(ModernLogger, ModernBackend, format, verbosity);
+    set_logger(logger);
 
     // Print application banner
     let banner = BannerConfig {

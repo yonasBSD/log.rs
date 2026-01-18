@@ -27,11 +27,11 @@
 //!
 //! ```rust
 //! use log_rs::logging::{
-//!     set_logger, log, Printer, SimpleLogger, Verbosity, LogFormat, SimpleBackend,
+//!     set_logger, log, Printer, ModernLogger, ModernBackend, Verbosity, LogFormat,
 //! };
 //!
 //! // Initialize once at startup
-//! let logger = Printer::new(SimpleLogger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+//! let logger = Printer::new(ModernLogger, ModernBackend, LogFormat::Text, Verbosity::Normal);
 //! set_logger(logger);
 //!
 //! // Use anywhere in your app
@@ -111,7 +111,7 @@ pub(crate) mod backends;
 pub(crate) mod fields;
 pub mod internal;
 pub(crate) mod loggers;
-pub(crate) mod printers;
+pub mod printers;
 pub(crate) mod progress;
 
 pub use backends::*;

@@ -5,9 +5,11 @@ pub const PROJECT_NAME: &str = env!("CARGO_PKG_NAME");
 pub const PROJECT_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 
 /// A global, thread-safe screen logger.
-pub trait GlobalLoggerType: EmitsEvents {}
+pub trait GlobalLoggerType: EmitsEvents + Send + Sync {}
+
 pub type GlobalLogger = Printer<ModernLogger, ModernBackend>;
-static LOGGER: OnceCell<Box<dyn GlobalLoggerType>> = OnceCell::new();
+
+static LOGGER: OnceCell<GlobalLogger> = OnceCell::new();
 
 /// One-time guard for tracing subscriber initialization.
 pub static INIT: OnceCell<()> = OnceCell::new();
@@ -16,15 +18,11 @@ pub static INIT: OnceCell<()> = OnceCell::new();
 pub static L: LogProxy = LogProxy;
 
 /// Set the global logger.
-pub fn set_logger<L: GlobalLoggerType + 'static>(logger: L) {
-    let _ = LOGGER.set(Box::new(logger));
+pub fn set_logger(logger: GlobalLogger) {
+    let _ = LOGGER.set(logger);
 }
 
 /// Retrieve the global logger.
-pub fn log<L: GlobalLoggerType>() -> &'static L {
-    LOGGER
-        .get()
-        .expect("Logger not initialized")
-        .downcast_ref::<L>()
-        .expect("Global logger type mismatch")
+pub fn logger() -> &'static GlobalLogger {
+    LOGGER.get().expect("Logger not initialized")
 }

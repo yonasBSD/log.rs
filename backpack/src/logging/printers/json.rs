@@ -32,48 +32,66 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
     }
 
     // -------------------------------------------------------------------------
-    // Public: structured JSON logging (used by Drop-based LogEvent)
+    // Text-mode emission with fields support
     // -------------------------------------------------------------------------
-    pub fn emit_event(&self, level: LogLevel, msg: &str, fields: &Fields) {
-        match self.format {
-            LogFormat::Json => self.emit_json_fields(level, msg, Some(fields)),
-            LogFormat::Text => self.emit_text(level, msg),
-        }
-    }
+    pub fn emit_text_fields(&self, level: LogLevel, msg: &str, fields: Option<&Fields>) {
+        // Format the message with fields appended if present
+        let formatted_msg = if let Some(f) = fields
+            && !f.is_empty()
+        {
+            let fields_str = f
+                .iter()
+                .map(|(k, v)| format!("\x1b[2m{}={}\x1b[0m", k, v)) // dim style
+                .collect::<Vec<_>>()
+                .join(" ");
+            format!("{} {}", msg, fields_str)
+        } else {
+            msg.to_string()
+        };
 
-    // -------------------------------------------------------------------------
-    // Text-mode emission
-    // -------------------------------------------------------------------------
-    pub fn emit_text(&self, level: LogLevel, msg: &str) {
         match level {
             LogLevel::Info => {
-                if let Some(s) = self.inner.info(msg) {
+                if let Some(s) = self.inner.info(&formatted_msg) {
                     let _ = self.backend.render_info(&s);
                 }
             }
             LogLevel::Warn => {
-                if let Some(s) = self.inner.warn(msg) {
+                if let Some(s) = self.inner.warn(&formatted_msg) {
                     let _ = self.backend.render_warning(&s);
                 }
             }
             LogLevel::Error => {
-                let s = self.inner.err(msg);
+                let s = self.inner.err(&formatted_msg);
                 let _ = self.backend.render_error(&s);
             }
             LogLevel::Debug => {
                 if matches!(self.verbosity, Verbosity::Verbose | Verbosity::Trace)
-                    && let Some(s) = self.inner.debug(msg)
+                    && let Some(s) = self.inner.debug(&formatted_msg)
                 {
                     let _ = self.backend.render_debug(&s);
                 }
             }
             LogLevel::Trace => {
                 if self.verbosity == Verbosity::Trace
-                    && let Some(s) = self.inner.trace(msg)
+                    && let Some(s) = self.inner.trace(&formatted_msg)
                 {
                     let _ = self.backend.render_trace(&s);
                 }
             }
+        }
+    }
+
+    pub fn emit_text(&self, level: LogLevel, msg: &str) {
+        self.emit_text_fields(level, msg, None);
+    }
+
+    // -------------------------------------------------------------------------
+    // Public: structured logging (used by Drop-based LogEvent)
+    // -------------------------------------------------------------------------
+    pub fn emit_event(&self, level: LogLevel, msg: &str, fields: &Fields) {
+        match self.format {
+            LogFormat::Json => self.emit_json_fields(level, msg, Some(fields)),
+            LogFormat::Text => self.emit_text_fields(level, msg, Some(fields)),
         }
     }
 
@@ -83,10 +101,7 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
     pub fn info_with_fields(&self, m: &str, fields: &Fields) {
         match self.format {
             LogFormat::Json => self.emit_json_fields(LogLevel::Info, m, Some(fields)),
-            LogFormat::Text => {
-                // In text mode, fields are ignored — consistent with Drop-based LogEvent
-                let _ = self.inner.info(m).map(|s| self.backend.render_info(&s));
-            }
+            LogFormat::Text => self.emit_text_fields(LogLevel::Info, m, Some(fields)),
         }
     }
 
@@ -166,14 +181,8 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
 impl<L: FormatLogger, B: RenderBackend> EmitsEvents for Printer<L, B> {
     fn emit_event(&self, level: LogLevel, msg: &str, fields: &crate::logging::Fields) {
         match self.format {
-            LogFormat::Json => {
-                // JSON mode: include fields
-                self.emit_json_fields(level, msg, Some(fields));
-            }
-            LogFormat::Text => {
-                // Text mode: ignore fields for now, just emit the message
-                self.emit_text(level, msg);
-            }
+            LogFormat::Json => self.emit_json_fields(level, msg, Some(fields)),
+            LogFormat::Text => self.emit_text_fields(level, msg, Some(fields)),
         }
     }
 }

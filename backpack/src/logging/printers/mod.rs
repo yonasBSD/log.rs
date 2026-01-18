@@ -1,10 +1,4 @@
-use crate::LogFormat;
-use crate::Verbosity;
-use crate::logging::FormatLogger;
-use crate::logging::LogLevel;
-use crate::logging::RenderBackend;
-use crate::logging::ScreenLogger;
-use crate::logging::format_duration;
+use crate::{LogFormat, Verbosity, logging::*};
 use std::{sync::Mutex, time::Instant};
 use tracing::{Level, debug, error, info, span, span::Span, trace, warn};
 
@@ -246,4 +240,12 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn dump_tree(&self) {
         self.dump_task_tree();
     }
+}
+
+impl<L, B> GlobalLoggerType for Printer<L, B>
+where
+    L: FormatLogger + Send + Sync,
+    B: RenderBackend + Send + Sync,
+    Self: EmitsEvents,
+{
 }

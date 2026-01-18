@@ -122,13 +122,16 @@ pub use printers::*;
 pub use progress::*;
 
 #[cfg(test)]
-#[path = "tests/unit.rs"]
-mod unit;
+#[path = "tests"]
+mod tests {
+    pub(super) mod common;
 
-#[cfg(test)]
-#[path = "tests/behavior.rs"]
-mod behavior;
+    #[path = "unit.rs"]
+    mod unit;
 
-#[cfg(test)]
-#[path = "tests/progress.rs"]
-mod progress_tests;
+    #[path = "behavior.rs"]
+    mod behavior;
+
+    #[path = "progress.rs"]
+    mod progress_tests;
+}

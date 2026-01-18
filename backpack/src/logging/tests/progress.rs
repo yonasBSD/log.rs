@@ -2,11 +2,8 @@
 // 6. PROGRESS API BEHAVIOR TESTS
 // ============================================================================
 
-mod common;
-
 mod progress_behavior_tests {
-    use super::common::capture_stderr;
-    use crate::logging::*;
+    use crate::logging::{tests::common::capture_stderr, *};
     use std::sync::Once;
 
     static INIT_LOGGER: Once = Once::new();

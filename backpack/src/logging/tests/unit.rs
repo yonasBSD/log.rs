@@ -1,12 +1,14 @@
-mod common;
-
 mod logger_tests {
-    use crate::logging::*;
+    use crate::logging::{tests::common::*, *};
 
-    // Mock FormatLogger for testing
-    //
-    // This mock lets us exercise the default methods on FormatLogger
-    // without involving any real formatting or I/O.
+    // ============================================================================
+    // TEST FIXTURES
+    // ============================================================================
+
+    /// Mock FormatLogger for testing
+    ///
+    /// This mock lets us exercise the default methods on FormatLogger
+    /// without involving any real formatting or I/O.
     struct MockLogger {
         quiet: bool,
         verbose: bool,
@@ -59,7 +61,7 @@ mod logger_tests {
         }
 
         fn done_raw(&self) -> String {
-            format!("DONE!")
+            "DONE!".to_string()
         }
 
         fn step_raw(&self, m: &str) -> String {
@@ -75,7 +77,10 @@ mod logger_tests {
         }
     }
 
-    // Test Verbosity levels
+    // ============================================================================
+    // BASIC ENUM TESTS
+    // ============================================================================
+
     #[test]
     fn test_verbosity_levels() {
         assert_eq!(Verbosity::Quiet, Verbosity::Quiet);
@@ -90,7 +95,10 @@ mod logger_tests {
         assert_ne!(LogFormat::Text, LogFormat::Json);
     }
 
-    // Test FormatLogger trait default methods
+    // ============================================================================
+    // FORMAT LOGGER TRAIT TESTS
+    // ============================================================================
+
     mod format_logger_tests {
         use super::*;
 
@@ -110,7 +118,7 @@ mod logger_tests {
         }
 
         #[test]
-        fn test_quiet_mode_suppresses_most_messages_but_not_outro_done_or_errors() {
+        fn test_quiet_mode_suppresses_most_messages() {
             let logger = MockLogger::new(Verbosity::Quiet);
 
             // Suppressed in quiet mode
@@ -122,9 +130,14 @@ mod logger_tests {
             assert_eq!(logger.step("test"), None);
             assert_eq!(logger.debug("test"), None);
             assert_eq!(logger.trace("test"), None);
+        }
 
-            // Outro and done are *not* suppressed in quiet mode so that quiet builds/tests
-            // can still show timing summaries.
+        #[test]
+        fn test_quiet_mode_preserves_outro_done_and_errors() {
+            let logger = MockLogger::new(Verbosity::Quiet);
+
+            // Outro and done are not suppressed so quiet builds/tests
+            // can still show timing summaries
             assert_eq!(logger.outro("test"), Some("OUTRO: test".to_string()));
             assert_eq!(logger.done(), Some("DONE!".to_string()));
 
@@ -158,13 +171,16 @@ mod logger_tests {
         }
     }
 
-    // Test SimpleLogger formatting
+    // ============================================================================
+    // SIMPLE LOGGER TESTS
+    // ============================================================================
+
     mod simple_logger_tests {
         use super::*;
 
         #[test]
         fn test_simple_logger_formats() {
-            let logger = crate::logging::SimpleLogger;
+            let logger = SimpleLogger;
 
             assert!(logger.ok_raw("test").contains("test"));
             assert!(logger.warn_raw("test").contains("test"));
@@ -174,7 +190,7 @@ mod logger_tests {
 
         #[test]
         fn test_simple_logger_intro_outro() {
-            let logger = crate::logging::SimpleLogger;
+            let logger = SimpleLogger;
 
             let intro = logger.intro_raw("Starting task");
             assert!(intro.contains("Starting task"));
@@ -187,14 +203,17 @@ mod logger_tests {
 
         #[test]
         fn test_simple_logger_step() {
-            let logger = crate::logging::SimpleLogger;
+            let logger = SimpleLogger;
 
             let step = logger.step_raw("Processing item");
             assert!(step.contains("Processing item"));
         }
     }
 
-    // Test ModernLogger formatting (including emoji refinements)
+    // ============================================================================
+    // MODERN LOGGER TESTS
+    // ============================================================================
+
     mod modern_logger_tests {
         use super::*;
 
@@ -228,7 +247,10 @@ mod logger_tests {
         }
     }
 
-    // Test Printer behavior (state-level, not actual I/O)
+    // ============================================================================
+    // PRINTER STATE TESTS
+    // ============================================================================
+
     mod printer_tests {
         use super::*;
 
@@ -272,68 +294,12 @@ mod logger_tests {
 
             assert!(printer.steps.lock().unwrap().is_empty());
         }
-
-        /*
-        #[test]
-        fn test_printer_info_with_fields_compiles_and_uses_fields_type() {
-        let logger = MockLogger::new(Verbosity::Normal);
-        let printer = Printer::new(logger, SimpleBackend, LogFormat::Json, Verbosity::Normal);
-
-        let mut fields = Fields::new();
-        fields.insert("user_id".to_string(), "123".to_string());
-        fields.insert("role".to_string(), "admin".to_string());
-
-        printer.info_with_fields("User logged in", fields);
-        }
-        */
     }
 
-    // Test global logger functionality
-    mod global_logger_tests {
-        use super::*;
-        use std::sync::{Arc, OnceLock};
+    // ============================================================================
+    // EDGE CASE TESTS
+    // ============================================================================
 
-        // A shadow global used ONLY for testing.
-        static TEST_LOGGER: OnceLock<Arc<dyn ScreenLogger + Send + Sync>> = OnceLock::new();
-
-        struct TestLogger;
-
-        impl ScreenLogger for TestLogger {
-            fn ok(&self, _m: &str) {}
-            fn warn(&self, _m: &str) {}
-            fn err(&self, _m: &str) {}
-            fn info(&self, _m: &str) {}
-            fn dim(&self, _m: &str) {}
-            fn intro(&self, _m: &str) {}
-            fn outro(&self, _m: &str) {}
-            fn done(&self) {}
-            fn step(&self, _m: &str) {}
-            fn debug(&self, _m: &str) {}
-            fn trace(&self, _m: &str) {}
-            fn dump_tree(&self) {}
-        }
-
-        fn test_log() -> &'static Arc<dyn ScreenLogger + Send + Sync> {
-            TEST_LOGGER.get().expect("Logger not initialized")
-        }
-
-        #[test]
-        #[should_panic(expected = "Logger not initialized")]
-        fn test_log_panics_when_not_initialized() {
-            assert!(TEST_LOGGER.get().is_none());
-            let _ = test_log();
-        }
-
-        #[test]
-        fn test_set_logger_accepts_valid_logger() {
-            let _ = TEST_LOGGER.set(Arc::new(TestLogger));
-            let logger = test_log();
-            logger.ok("hello");
-            assert!(true);
-        }
-    }
-
-    // Edge cases
     #[test]
     fn test_empty_message() {
         let logger = MockLogger::new(Verbosity::Normal);
@@ -372,26 +338,12 @@ mod logger_tests {
         assert!(trace.is_verbose());
     }
 
-    mod structured_fields_tests_drop {
+    // ============================================================================
+    // STRUCTURED FIELDS TESTS
+    // ============================================================================
+
+    mod structured_fields_tests {
         use super::*;
-        use gag::BufferRedirect;
-        use std::io::Read;
-
-        fn capture_stdout<F: FnOnce()>(f: F) -> String {
-            let mut buf = Vec::new();
-            let mut redirect = BufferRedirect::stdout().unwrap();
-            f();
-            redirect.read_to_end(&mut buf).unwrap();
-            String::from_utf8(buf).unwrap()
-        }
-
-        fn capture_stderr<F: FnOnce()>(f: F) -> String {
-            let mut buf = Vec::new();
-            let mut redirect = BufferRedirect::stderr().unwrap();
-            f();
-            redirect.read_to_end(&mut buf).unwrap();
-            String::from_utf8(buf).unwrap()
-        }
 
         #[test]
         fn json_mode_emits_structured_fields_on_drop() {
@@ -403,7 +355,6 @@ mod logger_tests {
                     .info("User logged in")
                     .field("user_id", 42)
                     .field("role", "admin");
-                // emission happens on Drop
             });
 
             let line = out
@@ -419,21 +370,6 @@ mod logger_tests {
         }
 
         #[test]
-        fn text_mode_ignores_structured_fields_on_drop() {
-            let logger = MockLogger::new(Verbosity::Normal);
-            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
-
-            let out = capture_stdout(|| {
-                printer
-                    .info("User logged in")
-                    .field("user_id", 42)
-                    .field("role", "admin");
-            });
-
-            assert!(out.contains("User logged in"));
-            assert!(!out.contains("\"fields\""));
-        }
-        #[test]
         fn text_mode_emits_structured_fields_on_drop() {
             let logger = MockLogger::new(Verbosity::Normal);
             let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
@@ -448,6 +384,21 @@ mod logger_tests {
             assert!(out.contains("User logged in"));
             assert!(out.contains("user_id=42"));
             assert!(out.contains("role=admin"));
+        }
+
+        #[test]
+        fn text_mode_does_not_include_json_structure() {
+            let logger = MockLogger::new(Verbosity::Normal);
+            let printer = Printer::new(logger, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+
+            let out = capture_stdout(|| {
+                printer
+                    .info("User logged in")
+                    .field("user_id", 42)
+                    .field("role", "admin");
+            });
+
+            assert!(!out.contains("\"fields\""));
         }
 
         #[test]
@@ -529,11 +480,9 @@ mod logger_tests {
 
             let out = capture_stdout(|| {
                 printer.info("Simple message");
-                // No fields added
             });
 
             assert!(out.contains("Simple message"));
-            // Should not have any extra formatting for empty fields
             assert!(!out.contains("="));
         }
 
@@ -669,13 +618,12 @@ mod logger_tests {
                     .field("user_id", 42);
             });
 
-            // In quiet mode, info messages should be suppressed
             assert!(!out.contains("This should be suppressed"));
             assert!(!out.contains("user_id=42"));
         }
 
         #[test]
-        fn text_mode_fields_comparison_with_json() {
+        fn text_and_json_modes_both_handle_fields() {
             let logger_text = MockLogger::new(Verbosity::Normal);
             let printer_text = Printer::new(
                 logger_text,
@@ -706,15 +654,15 @@ mod logger_tests {
                     .field("errors", 0);
             });
 
-            // Both modes should include the message
+            // Both modes include the message
             assert!(text_out.contains("Task completed"));
             assert!(json_out.contains("Task completed"));
 
-            // Text mode has key=value format
+            // Text mode uses key=value format
             assert!(text_out.contains("items=100"));
             assert!(text_out.contains("errors=0"));
 
-            // JSON mode has structured fields
+            // JSON mode uses structured fields
             let line = json_out.lines().find(|l| !l.trim().is_empty()).unwrap();
             let v: serde_json::Value = serde_json::from_str(line).unwrap();
             assert_eq!(v["fields"]["items"], "100");
@@ -722,7 +670,9 @@ mod logger_tests {
         }
     }
 
-    // Roadmap feature placeholders (ignored until implemented)
+    // ============================================================================
+    // ROADMAP FEATURE PLACEHOLDERS (ignored until implemented)
+    // ============================================================================
     mod roadmap_feature_tests {
         #[test]
         #[ignore]
@@ -762,14 +712,17 @@ mod logger_tests {
     }
 }
 
-// Integration-style tests
+// ============================================================================
+// INTEGRATION TESTS
+// ============================================================================
+
 #[cfg(test)]
 mod integration_tests {
     use crate::logging::*;
 
     #[test]
     fn test_simple_logger_workflow() {
-        let logger = crate::logging::SimpleLogger;
+        let logger = SimpleLogger;
 
         let intro = logger.intro_raw("Starting deployment");
         assert!(intro.contains("Starting deployment"));
@@ -801,11 +754,10 @@ mod integration_tests {
 
     #[test]
     fn test_error_always_visible() {
-        let quiet = crate::logging::SimpleLogger;
-        let normal = crate::logging::SimpleLogger;
+        let logger = SimpleLogger;
 
-        let err1 = quiet.err_raw("Critical error");
-        let err2 = normal.err_raw("Critical error");
+        let err1 = logger.err_raw("Critical error");
+        let err2 = logger.err_raw("Critical error");
 
         assert_eq!(err1, err2);
         assert!(err1.contains("Critical error"));

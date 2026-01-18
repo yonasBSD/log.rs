@@ -128,3 +128,7 @@ mod unit;
 #[cfg(test)]
 #[path = "tests/behavior.rs"]
 mod behavior;
+
+#[cfg(test)]
+#[path = "tests/progress.rs"]
+mod progress_tests;

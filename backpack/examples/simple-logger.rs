@@ -12,8 +12,8 @@
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
     logging::{
-        LogFormat, ModernBackend, ModernLogger, Printer, SimpleBackend, SimpleLogger, Verbosity,
-        log::*, set_logger,
+        LogFormat, ModernBackend, ModernLogger, Printer, Progress, SimpleBackend, SimpleLogger,
+        Verbosity, log::*, set_logger,
     },
 };
 use std::thread;
@@ -22,6 +22,7 @@ use std::time::Duration;
 fn main() {
     // Parse command line arguments for verbosity
     let args: Vec<String> = std::env::args().collect();
+
     let verbosity: Verbosity = if args.contains(&"-q".to_string()) {
         Verbosity::Quiet
     } else if args.contains(&"-vv".to_string()) {
@@ -72,6 +73,52 @@ fn main() {
     // Demonstrate warnings and errors
     warn("Cache is not configured - performance may be degraded");
 
+    // Demonstrate progress tracking with known total
+    intro("Downloading dependencies");
+    {
+        let mut progress = Progress::with_total("Fetching packages", 5);
+        for _ in 1..=5 {
+            simulate_work(200);
+            progress.tick();
+        }
+        progress.finish("All packages downloaded");
+    }
+
+    // Demonstrate progress tracking without known total
+    intro("Processing files");
+    {
+        let mut progress = Progress::new("Scanning directory");
+        for _ in 1..=8 {
+            simulate_work(100);
+            progress.tick();
+        }
+        progress.finish("Scan complete");
+    }
+
+    // Demonstrate progress with manual updates
+    intro("Building application");
+    {
+        let mut progress = Progress::with_total("Compiling", 100);
+
+        // Simulate compilation progress
+        progress.update(10, 100);
+        simulate_work(150);
+
+        progress.update(35, 100);
+        simulate_work(200);
+
+        progress.update(60, 100);
+        simulate_work(180);
+
+        progress.update(85, 100);
+        simulate_work(120);
+
+        progress.update(100, 100);
+        simulate_work(100);
+
+        progress.finish("Build complete");
+    }
+
     // Demonstrate another task
     intro("Starting HTTP server");
     step("Binding to port 8080");
@@ -86,20 +133,51 @@ fn main() {
     debug("Debug: Connection pool size: 10");
     trace("Trace: Request headers: {\"user-agent\": \"example/1.0\"}");
 
-    // Demonstrate error handling
+    // Demonstrate error handling with progress
     intro("Processing background jobs");
-    step("Job 1: Send email notifications");
-    simulate_work(300);
-    ok("Sent 150 notifications");
+    {
+        let mut progress = Progress::with_total("Running jobs", 3);
 
-    step("Job 2: Generate reports");
-    simulate_work(400);
-    err("Failed to generate report: database timeout");
+        step("Job 1: Send email notifications");
+        simulate_work(300);
+        progress.tick();
+        ok("Sent 150 notifications");
 
-    step("Job 3: Clean up temp files");
-    simulate_work(200);
-    ok("Deleted 45 temporary files");
-    outro("Background jobs completed (with errors)");
+        step("Job 2: Generate reports");
+        simulate_work(400);
+        progress.tick();
+        err("Failed to generate report: database timeout");
+
+        step("Job 3: Clean up temp files");
+        simulate_work(200);
+        progress.tick();
+        ok("Deleted 45 temporary files");
+
+        progress.finish("Jobs completed (with errors)");
+    }
+
+    // Demonstrate progress with dynamic total changes
+    intro("Analyzing data");
+    {
+        let mut progress = Progress::new("Discovering files");
+
+        // First pass - counting
+        for _ in 1..=3 {
+            simulate_work(80);
+            progress.tick();
+        }
+
+        // Now we know the total
+        progress.update(3, 10);
+
+        // Continue processing with known total
+        for _ in 4..=10 {
+            simulate_work(100);
+            progress.tick();
+        }
+
+        progress.finish("Analysis complete");
+    }
 
     // Final status
     ok("Application running successfully");

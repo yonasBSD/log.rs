@@ -53,11 +53,9 @@ impl LogProxy {
         logger().dump_tree_event()
     }
 
-    /*
     /// Start a progress handle for a long-running task.
     #[must_use]
     pub fn progress(&self, msg: &str) -> Progress {
         Progress::new(msg)
     }
-    */
 }

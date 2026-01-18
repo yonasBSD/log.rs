@@ -1,4 +1,5 @@
-#[cfg(test)]
+mod common;
+
 mod logger_tests {
     use crate::logging::*;
 

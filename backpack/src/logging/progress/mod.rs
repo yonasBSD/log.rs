@@ -1,15 +1,13 @@
-/*
 /// A lightweight progress handle.
 ///
 /// This is intentionally simple: it just emits step/info/done messages
 /// through the global logger, so it works with any backend.
-
 use crate::logging::*;
 
 pub struct Progress {
-    label: String,
-    current: u64,
-    total: Option<u64>,
+    pub label: String,
+    pub current: u64,
+    pub total: Option<u64>,
 }
 
 impl Progress {
@@ -51,8 +49,11 @@ impl Progress {
         }
     }
 
-    pub fn finish(self, _msg: &str) {
-        logger().done();
+    pub fn finish(self, msg: &str) {
+        if !msg.is_empty() {
+            logger().outro(msg);
+        } else {
+            logger().done();
+        }
     }
 }
-*/

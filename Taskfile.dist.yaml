@@ -78,6 +78,7 @@ tasks:
     desc: Test code
     cmds:
       - task: test:code:rust
+      - task: test:docs:rust
 
   test:code:rust:
     desc: "Test Rust code"
@@ -85,6 +86,13 @@ tasks:
       - '**/*.rs'
     cmds:
       - cargo nextest run --workspace --all-targets --verbose --no-tests=warn --no-capture
+
+  test:code:rust:
+    desc: "Test documentation code"
+    sources:
+      - '**/*.rs'
+    cmds:
+      - cargo test --doc -- --no-capture
 
   test:scripts:
     desc: Test using scripts

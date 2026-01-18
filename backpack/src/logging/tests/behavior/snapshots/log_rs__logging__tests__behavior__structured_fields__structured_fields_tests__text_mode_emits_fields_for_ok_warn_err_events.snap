@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: ok_out
+---
+INFO: Connected to database [2mhost=localhost[0m [2mport=5432[0m

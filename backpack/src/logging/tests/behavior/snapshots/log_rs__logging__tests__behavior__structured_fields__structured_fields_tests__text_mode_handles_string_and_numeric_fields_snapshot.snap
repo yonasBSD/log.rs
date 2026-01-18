@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: out
+---
+INFO: Metrics reported [2mcount=234[0m [2mcpu_percent=23[0m [2mmemory_gb=1.2[0m

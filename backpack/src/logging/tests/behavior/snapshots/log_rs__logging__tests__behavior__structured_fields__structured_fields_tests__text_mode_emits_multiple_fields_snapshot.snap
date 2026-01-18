@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: out
+---
+INFO: Batch processing complete [2mduration_ms=3456[0m [2mfailed=23[0m [2mprocessed=1250[0m [2mskipped=5[0m

@@ -1,0 +1,8 @@
+---
+source: backpack/src/logging/tests/spans/timing.rs
+expression: out
+---
+→ outer
+→ inner
+✓ inner-done (took 10ms)
+✓ outer-done (took 10ms)

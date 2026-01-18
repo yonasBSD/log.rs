@@ -85,7 +85,9 @@ tasks:
     sources:
       - '**/*.rs'
     cmds:
+      - cargo insta test
       - cargo nextest run --workspace --all-targets --verbose --no-tests=warn --no-capture
+      - env RUST_TEST_THREADS=1 cargo test --test concurrency_loom -- --nocapture
 
   test:code:rust:
     desc: "Test documentation code"
@@ -137,6 +139,55 @@ tasks:
       - hurl --test --parallel --glob {{ .CLI_ARGS }} --report-html build/tests/hurl --report-json build/tests/hurl
       - cat build/tests/hurl/report.json | jq
       - echo www --port 4002 build/tests/hurl
+
+  # ---------------------------------------------------------------------------
+  # Core test tasks
+  # ---------------------------------------------------------------------------
+
+  test:snapshots:
+    desc: "Run insta snapshot tests"
+    cmds:
+      - cargo insta test
+
+  test:review:
+    desc: "Review insta snapshot changes"
+    cmds:
+      - cargo insta review
+
+  test:clean:
+    desc: "Clean up unused snapshot files"
+    cmds:
+      - cargo insta clean
+
+  test:fast:
+    desc: "Run fast tests only (no loom, no snapshots)"
+    cmds:
+      - cargo nextest run --workspace --all-targets --no-tests=warn --no-capture
+
+  test:loom:
+    desc: "Run loom concurrency tests (must be single-threaded)"
+    cmds:
+      - RUST_TEST_THREADS=1 cargo test --test concurrency_loom -- --nocapture
+
+  test:all:
+    desc: "Run full test suite: snapshots, nextest, loom"
+    cmds:
+      - task: test:snapshots
+      - task: test:fast
+      - task: test:loom
+
+  # ---------------------------------------------------------------------------
+  # CI-style test pipeline
+  # ---------------------------------------------------------------------------
+
+  test:ci:
+    desc: "CI pipeline: fmt, clippy, snapshots, nextest, loom"
+    cmds:
+      - cargo fmt --all -- --check
+      - cargo clippy --all-targets --all-features -- -D warnings
+      - task: test:snapshots
+      - task: test:fast
+      - task: test:loom
 
   clean:
     desc: "Clean up"

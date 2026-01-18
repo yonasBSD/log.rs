@@ -1,0 +1,23 @@
+---
+source: backpack/src/logging/tests/progress/progress_api.rs
+expression: out
+---
+[38;5;8m┌[0m  → Task A
+[38;5;8m│[0m
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Task A
+[38;5;8m┌[0m  → Task B
+[38;5;8m│[0m
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Task B
+[32m◇[0m  ⠿ Task A: 1
+[38;5;8m│[0m  
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Task A: 1
+[32m◇[0m  ⠿ Task B: 1
+[38;5;8m│[0m  
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Task B: 1
+[32m◇[0m  ⠿ Task A: 2
+[38;5;8m│[0m  
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Task A: 2
+[38;5;8m└[0m  ✔ A done (took 10ms)
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m131[0m[2m:[0m ✔ A done (took 10ms)
+[38;5;8m└[0m  ✔ B done (took 10ms)
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m131[0m[2m:[0m ✔ B done (took 10ms)

@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/core/mock_logger.rs
+expression: "format!(\"{:?}\", (verbosity, out))"
+---
+(Trace, Some("OK: snapshot-test"))

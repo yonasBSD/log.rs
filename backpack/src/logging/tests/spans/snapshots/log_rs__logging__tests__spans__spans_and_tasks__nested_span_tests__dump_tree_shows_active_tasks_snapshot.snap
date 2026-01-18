@@ -1,0 +1,9 @@
+---
+source: backpack/src/logging/tests/spans/spans_and_tasks.rs
+expression: out
+---
+→ build
+→ test
+Active tasks:
+  1. build (started, +0ms)
+  2. test (started, +0ms)

@@ -1,0 +1,18 @@
+---
+source: backpack/src/logging/tests/progress/progress_api.rs
+expression: out
+---
+[38;5;8m┌[0m  → Processing
+[38;5;8m│[0m
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Processing
+[32m◇[0m  ⠿ Processing: 1
+[38;5;8m│[0m  
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Processing: 1
+[32m◇[0m  ⠿ Processing: 2
+[38;5;8m│[0m  
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Processing: 2
+[32m◇[0m  ⠿ Processing: 3
+[38;5;8m│[0m  
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Processing: 3
+[38;5;8m└[0m  ✔ Processing complete (took 10ms)
+[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m131[0m[2m:[0m ✔ Processing complete (took 10ms)

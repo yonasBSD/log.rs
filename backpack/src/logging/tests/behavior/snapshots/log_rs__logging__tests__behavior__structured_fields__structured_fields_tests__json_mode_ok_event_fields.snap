@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: json_out
+---
+{"fields":{"errors":"0","items":"100"},"level":"info","message":"Task completed"}

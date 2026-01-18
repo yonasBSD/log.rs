@@ -126,12 +126,24 @@ pub use progress::*;
 mod tests {
     pub(super) mod common;
 
-    #[path = "unit.rs"]
-    mod unit;
+    // Core tests
+    pub(super) mod core;
 
-    #[path = "behavior.rs"]
-    mod behavior;
+    // Formatter tests
+    pub(super) mod formatters;
 
-    #[path = "progress.rs"]
-    mod progress_tests;
+    // Behavior tests
+    pub(super) mod behavior;
+
+    // Span & task tests
+    pub(super) mod spans;
+
+    // Progress API tests
+    pub(super) mod progress;
+
+    // Integration tests
+    pub(super) mod integration;
+
+    // Roadmap / future feature tests
+    pub(super) mod roadmap;
 }

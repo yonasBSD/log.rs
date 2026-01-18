@@ -1,0 +1,5 @@
+---
+source: backpack/src/logging/tests/behavior/structured_fields.rs
+expression: warn_out
+---
+WARN: Retrying connection [2mattempt=3[0m [2mmax_attempts=5[0m

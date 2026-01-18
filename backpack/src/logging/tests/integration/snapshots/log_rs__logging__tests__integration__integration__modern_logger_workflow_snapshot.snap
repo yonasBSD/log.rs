@@ -1,0 +1,8 @@
+---
+source: backpack/src/logging/tests/integration/integration.rs
+expression: out
+---
+→ Running tests
+⠿ Test suite 1
+✔ All tests passed
+✔ Testing complete

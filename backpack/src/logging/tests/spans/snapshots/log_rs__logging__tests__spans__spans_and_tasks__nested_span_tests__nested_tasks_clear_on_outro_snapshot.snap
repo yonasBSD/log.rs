@@ -1,0 +1,8 @@
+---
+source: backpack/src/logging/tests/spans/spans_and_tasks.rs
+expression: out
+---
+→ task-1
+→ task-2
+✓ done-2 (took 10ms)
+✓ done-1 (took 10ms)

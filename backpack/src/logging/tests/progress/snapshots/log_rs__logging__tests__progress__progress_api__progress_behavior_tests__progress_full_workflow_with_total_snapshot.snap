@@ -2,20 +2,17 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[38;5;8m┌[0m  → Downloading
+[34m●[0m  ℹ Downloading
+[38;5;8m│[0m  
+[34m●[0m  ℹ Downloading (1/5)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Downloading (2/5)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Downloading (3/5)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Downloading (5/5)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Download complete
+[38;5;8m│[0m  
+[34m●[0m  ℹ done
 [38;5;8m│[0m
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Downloading
-[32m◇[0m  ⠿ Downloading: 1/5
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Downloading: 1/5
-[32m◇[0m  ⠿ Downloading: 2/5
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Downloading: 2/5
-[32m◇[0m  ⠿ Downloading: 3/5
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Downloading: 3/5
-[32m◇[0m  ⠿ Downloading: 5/5
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Downloading: 5/5
-[38;5;8m└[0m  ✔ Download complete (took 10ms)
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m131[0m[2m:[0m ✔ Download complete (took 10ms)

@@ -27,4 +27,4 @@ coverage/
 .tribble/
 
 # Core dumps
-*.core
+**/*.core

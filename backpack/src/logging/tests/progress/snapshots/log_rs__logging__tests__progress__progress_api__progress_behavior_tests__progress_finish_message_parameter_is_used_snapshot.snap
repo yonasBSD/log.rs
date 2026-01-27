@@ -2,8 +2,9 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[38;5;8m┌[0m  → Task
+[34m●[0m  ℹ Task
+[38;5;8m│[0m  
+[34m●[0m  ℹ This message is ignored
+[38;5;8m│[0m  
+[34m●[0m  ℹ done
 [38;5;8m│[0m
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Task
-[38;5;8m└[0m  ✔ This message is ignored (took 10ms)
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m131[0m[2m:[0m ✔ This message is ignored (took 10ms)

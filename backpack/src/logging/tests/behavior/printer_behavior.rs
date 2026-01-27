@@ -1,4 +1,3 @@
-
 //! Behavior tests for runtime logging behavior:
 //!   1. Verbosity-level behavior (debug/trace visibility)
 //!   2. That something is actually printed in verbose/trace modes
@@ -6,8 +5,8 @@
 //!   4. Quiet-mode behavior
 
 use crate::config;
-use crate::logging::*;
 use crate::logging::tests::common::*;
+use crate::logging::*;
 use predicates::prelude::*;
 
 mod verbosity_behavior_tests {

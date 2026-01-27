@@ -28,7 +28,7 @@ fn main() {
     };
 
     // Initialize the logger with ModernLogger formatter
-    let logger = Printer::new(ModernLogger, ModernBackend, format, verbosity);
+    let logger = Printer::new(ModernLogger, ModernBackend::new(), format, verbosity);
     set_logger(logger);
 
     // Print application banner (skip in JSON mode)

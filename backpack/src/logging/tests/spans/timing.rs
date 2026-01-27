@@ -1,7 +1,6 @@
-
 use crate::config;
-use crate::logging::*;
 use crate::logging::tests::common::*;
+use crate::logging::*;
 
 use insta::assert_snapshot;
 use std::time::Duration;
@@ -58,4 +57,3 @@ mod timing_tests {
         assert_snapshot!(out);
     }
 }
-

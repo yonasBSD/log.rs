@@ -1,4 +1,3 @@
-
 use crate::logging::*;
 use insta::assert_snapshot;
 
@@ -45,4 +44,3 @@ fn modern_logger_debug_and_trace_markers_snapshot() {
 
     assert_snapshot!(out);
 }
-

@@ -31,7 +31,7 @@
 //! };
 //!
 //! // Initialize once at startup
-//! let logger = Printer::new(ModernLogger, ModernBackend, LogFormat::Text, Verbosity::Normal);
+//! let logger = Printer::new(ModernLogger, ModernBackend::new(), LogFormat::Text, Verbosity::Normal);
 //! set_logger(logger);
 //!
 //! // Use anywhere in your app

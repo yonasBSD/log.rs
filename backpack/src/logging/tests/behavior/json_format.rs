@@ -1,8 +1,7 @@
-
 mod json_format_behavior_tests {
     //use super::*;
-    use crate::logging::*;
     use crate::logging::tests::common::*;
+    use crate::logging::*;
 
     use insta::assert_snapshot;
     use pretty_assertions::assert_eq;
@@ -75,4 +74,3 @@ mod json_format_behavior_tests {
         assert_snapshot!(out);
     }
 }
-

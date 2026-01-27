@@ -1,4 +1,3 @@
-
 use crate::logging::*;
 use insta::assert_snapshot;
 
@@ -41,4 +40,3 @@ fn error_always_visible_snapshot() {
     let out = format!("{err1}\n{err2}\n");
     assert_snapshot!(out);
 }
-

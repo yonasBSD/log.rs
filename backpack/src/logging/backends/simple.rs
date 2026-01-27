@@ -53,4 +53,23 @@ impl RenderBackend for SimpleBackend {
         eprintln!("{msg}");
         Ok(())
     }
+
+    fn render_progress(
+        &self,
+        label: &str,
+        current: u64,
+        total: Option<u64>,
+        finished: bool,
+    ) -> anyhow::Result<()> {
+        match total {
+            Some(t) => println!("{label} ({current}/{t})"),
+            None => println!("{label} ({current})"),
+        }
+
+        if finished {
+            println!("{label} — done");
+        }
+
+        Ok(())
+    }
 }

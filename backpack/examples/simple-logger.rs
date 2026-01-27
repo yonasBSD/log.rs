@@ -12,8 +12,7 @@
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
     logging::{
-        LogFormat, Printer, Progress, SimpleBackend, SimpleLogger,
-        Verbosity, log::*, set_logger,
+        LogFormat, Printer, Progress, SimpleBackend, SimpleLogger, Verbosity, log::*, set_logger,
     },
 };
 use std::thread;

@@ -55,7 +55,8 @@ impl LogProxy {
 
     /// Start a progress handle for a long-running task.
     #[must_use]
-    pub fn progress(&self, msg: &str) -> Progress {
-        Progress::new(msg)
+    pub fn progress(&self, label: &str, current: u64, total: Option<u64>, finished: bool) {
+        let logger = crate::logging::logger();
+        logger.progress(label, current, total, finished);
     }
 }

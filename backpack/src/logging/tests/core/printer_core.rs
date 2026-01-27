@@ -1,6 +1,5 @@
-
-use crate::logging::*;
 use crate::logging::tests::common::*;
+use crate::logging::*;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -43,4 +42,3 @@ fn printer_step_stack_initially_empty() {
 
     assert!(printer.steps.lock().unwrap().is_empty());
 }
-

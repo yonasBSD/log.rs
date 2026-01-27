@@ -2,12 +2,9 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[38;5;8m┌[0m  → Processing
+[34m●[0m  ℹ Processing
+[38;5;8m│[0m  
+[34m●[0m  ℹ Processing (1/10)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Processing (2/10)
 [38;5;8m│[0m
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Processing
-[32m◇[0m  ⠿ Processing: 1/10
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Processing: 1/10
-[32m◇[0m  ⠿ Processing: 2/10
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Processing: 2/10

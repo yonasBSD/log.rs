@@ -5,52 +5,52 @@ pub struct LogProxy;
 
 impl LogProxy {
     pub fn ok(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().ok_event(msg)
+        LogEvent::new(logger(), LogLevel::Info, msg)
     }
 
     pub fn warn(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().warn_event(msg)
+        LogEvent::new(logger(), LogLevel::Warn, msg)
     }
 
     pub fn err(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().err_event(msg)
+        LogEvent::new(logger(), LogLevel::Error, msg)
     }
 
     pub fn info(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().info_event(msg)
+        LogEvent::new(logger(), LogLevel::Info, msg)
     }
 
     pub fn dim(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().dim_event(msg)
+        LogEvent::new(logger(), LogLevel::Info, msg)
     }
 
     pub fn intro(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().intro_event(msg)
+        LogEvent::new(logger(), LogLevel::Info, msg)
     }
 
     pub fn outro(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().outro_event(msg)
+        LogEvent::new(logger(), LogLevel::Info, msg)
     }
 
     pub fn done(&self) -> LogEvent<'static, GlobalLogger> {
-        logger().done_event()
+        LogEvent::new(logger(), LogLevel::Info, "done")
     }
 
     pub fn step(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().step_event(msg)
+        LogEvent::new(logger(), LogLevel::Info, msg)
     }
 
     pub fn debug(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().debug_event(msg)
+        LogEvent::new(logger(), LogLevel::Debug, msg)
     }
 
     pub fn trace(&self, msg: &str) -> LogEvent<'static, GlobalLogger> {
-        logger().trace_event(msg)
+        LogEvent::new(logger(), LogLevel::Trace, msg)
     }
 
     /// Dump the current task tree (verbose/trace only).
     pub fn dump_tree(&self) -> LogEvent<'static, GlobalLogger> {
-        logger().dump_tree_event()
+        LogEvent::new(logger(), LogLevel::Debug, "dump_tree")
     }
 
     /// Start a progress handle for a long-running task.

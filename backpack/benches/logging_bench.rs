@@ -1,4 +1,4 @@
-use backpack::logging::{LogFormat, Printer, SimpleBackend, SimpleLogger, Verbosity};
+use log_rs::logging::{LogFormat, Printer, SimpleBackend, SimpleLogger, Verbosity};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 fn bench_text_mode_no_fields(c: &mut Criterion) {

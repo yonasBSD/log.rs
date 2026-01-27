@@ -2,6 +2,5 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[38;5;8m┌[0m  → Processing items
+[34m●[0m  ℹ Processing items
 [38;5;8m│[0m
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Processing items

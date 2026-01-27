@@ -1,59 +1,61 @@
-/// A lightweight progress handle.
-///
-/// This is intentionally simple: it just emits step/info/done messages
-/// through the global logger, so it works with any backend.
-use crate::logging::*;
+use crate::logging::{done, intro, step, outro};
 
+/// Lightweight progress handle for long-running tasks.
 pub struct Progress {
-    pub label: String,
-    pub current: u64,
-    pub total: Option<u64>,
+    pub(crate) label: String,
+    pub(crate) total: Option<u64>,
+    pub(crate) current: u64,
+    pub(crate) finished: bool,
 }
 
 impl Progress {
-    #[must_use]
+    /// Create a progress handle without a known total.
     pub fn new(label: &str) -> Self {
-        logger().intro(label);
+        intro(label);
         Self {
             label: label.to_string(),
-            current: 0,
             total: None,
+            current: 0,
+            finished: false,
         }
     }
 
-    #[must_use]
+    /// Create a progress handle with a known total.
     pub fn with_total(label: &str, total: u64) -> Self {
-        logger().intro(label);
+        intro(label);
         Self {
             label: label.to_string(),
-            current: 0,
             total: Some(total),
+            current: 0,
+            finished: false,
         }
     }
 
+    /// Manually update progress with an explicit current/total.
     pub fn update(&mut self, current: u64, total: u64) {
         self.current = current;
         self.total = Some(total);
-        let msg = format!("{}: {}/{}", self.label, self.current, total);
-        logger().step(&msg);
+        let msg = format!("{} ({}/{})", self.label, current, total);
+        step(&msg);
     }
 
+    /// Increment progress by 1 and emit a step message.
     pub fn tick(&mut self) {
         self.current += 1;
         if let Some(total) = self.total {
-            let msg = format!("{}: {}/{}", self.label, self.current, total);
-            logger().step(&msg);
+            let msg = format!("{} ({}/{})", self.label, self.current, total);
+            step(&msg);
         } else {
-            let msg = format!("{}: {}", self.label, self.current);
-            logger().step(&msg);
+            step(&self.label);
         }
     }
 
-    pub fn finish(self, msg: &str) {
-        if !msg.is_empty() {
-            logger().outro(msg);
-        } else {
-            logger().done();
+    /// Finish the progress with a final message and a done marker.
+    pub fn finish(mut self, msg: &str) {
+        if !self.finished {
+            outro(msg);
+            done();
+            self.finished = true;
         }
     }
 }

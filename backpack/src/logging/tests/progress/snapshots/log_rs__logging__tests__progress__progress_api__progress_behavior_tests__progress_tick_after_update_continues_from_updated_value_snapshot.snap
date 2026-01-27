@@ -2,15 +2,11 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[38;5;8m┌[0m  → Syncing
+[34m●[0m  ℹ Syncing
+[38;5;8m│[0m  
+[34m●[0m  ℹ Syncing (5/10)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Syncing (6/10)
+[38;5;8m│[0m  
+[34m●[0m  ℹ Syncing (7/10)
 [38;5;8m│[0m
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Syncing
-[32m◇[0m  ⠿ Syncing: 5/10
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Syncing: 5/10
-[32m◇[0m  ⠿ Syncing: 6/10
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Syncing: 6/10
-[32m◇[0m  ⠿ Syncing: 7/10
-[38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Syncing: 7/10

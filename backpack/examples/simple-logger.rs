@@ -12,7 +12,7 @@
 use log_rs::{
     banner::{BannerConfig, print as print_banner},
     logging::{
-        LogFormat, ModernBackend, ModernLogger, Printer, Progress, SimpleBackend, SimpleLogger,
+        LogFormat, Printer, Progress, SimpleBackend, SimpleLogger,
         Verbosity, log::*, set_logger,
     },
 };
@@ -39,8 +39,8 @@ fn main() {
         LogFormat::Text
     };
 
-    // Initialize the logger with ModernLogger formatter
-    let logger = Printer::new(ModernLogger, ModernBackend, format, verbosity);
+    // Initialize the logger with SimpleLogger formatter
+    let logger = Printer::new(SimpleLogger, SimpleBackend, format, verbosity);
     set_logger(logger);
 
     // Print application banner

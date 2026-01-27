@@ -10,7 +10,10 @@ pub trait EmitsEvents {
     fn emit_event(&self, level: LogLevel, msg: &str, fields: &Fields);
 }
 
-impl<L: EmitsEvents> Drop for LogEvent<'_, L> {
+impl<L> Drop for LogEvent<'_, L>
+where
+    L: EmitsEvents + ?Sized,
+{
     fn drop(&mut self) {
         if self.emitted {
             return;
@@ -25,7 +28,10 @@ impl<L: EmitsEvents> Drop for LogEvent<'_, L> {
 /// Structured fields attached to a log event.
 pub type Fields = BTreeMap<String, String>;
 
-pub struct LogEvent<'a, L: EmitsEvents> {
+pub struct LogEvent<'a, L>
+where
+    L: EmitsEvents + ?Sized,
+{
     logger: &'a L,
     level: LogLevel,
     message: String,
@@ -33,11 +39,11 @@ pub struct LogEvent<'a, L: EmitsEvents> {
     emitted: bool,
 }
 
-impl<'a, L: EmitsEvents> LogEvent<'a, L> {
-    pub fn new(logger: &'a L, level: LogLevel, msg: &str) -> Self
-    where
-        L: EmitsEvents,
-    {
+impl<'a, L> LogEvent<'a, L>
+where
+    L: EmitsEvents + ?Sized,
+{
+    pub fn new(logger: &'a L, level: LogLevel, msg: &str) -> Self {
         Self {
             logger,
             level,

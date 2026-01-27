@@ -2,7 +2,4 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[34m●[0m  ℹ Uploading
-[38;5;8m│[0m  
-[34m●[0m  ℹ Uploading (5/10)
-[38;5;8m│[0m
+

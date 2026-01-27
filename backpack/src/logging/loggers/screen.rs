@@ -11,4 +11,5 @@ pub trait ScreenLogger {
     fn debug(&self, m: &str);
     fn trace(&self, m: &str);
     fn dump_tree(&self);
+    fn progress(&self, label: &str, current: u64, total: Option<u64>, finished: bool);
 }

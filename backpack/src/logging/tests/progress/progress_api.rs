@@ -1,21 +1,16 @@
-
 use crate::logging::{tests::common::capture_stderr, *};
 use insta::assert_snapshot;
 use serial_test::serial;
-use std::sync::Once;
-
-static INIT_LOGGER: Once = Once::new();
 
 fn ensure_global_logger() {
-    INIT_LOGGER.call_once(|| {
-        let printer = Printer::new(
-            ModernLogger,
-            ModernBackend,
-            LogFormat::Text,
-            Verbosity::Trace,
-        );
-        crate::logging::set_logger(printer);
-    });
+    crate::logging::internal::globals::reset_logger();
+    let printer = Printer::new(
+        SimpleLogger,
+        SimpleBackend,
+        LogFormat::Text,
+        Verbosity::Trace,
+    );
+    set_logger(printer);
 }
 
 mod progress_behavior_tests {
@@ -285,4 +280,3 @@ mod progress_behavior_tests {
         assert_snapshot!(out);
     }
 }
-

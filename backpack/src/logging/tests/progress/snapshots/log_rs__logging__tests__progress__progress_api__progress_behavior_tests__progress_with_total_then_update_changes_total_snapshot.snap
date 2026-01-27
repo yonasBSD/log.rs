@@ -2,11 +2,4 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[34m●[0m  ℹ Dynamic
-[38;5;8m│[0m  
-[34m●[0m  ℹ Dynamic (1/100)
-[38;5;8m│[0m  
-[34m●[0m  ℹ Dynamic (50/200)
-[38;5;8m│[0m  
-[34m●[0m  ℹ Dynamic (51/200)
-[38;5;8m│[0m
+

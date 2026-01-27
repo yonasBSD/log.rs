@@ -1,8 +1,8 @@
-use crate::logging::{globals, logger, GlobalLogger, LogEvent, LogLevel};
+use crate::logging::{GlobalLogger, LogEvent, LogLevel, globals, logger};
 use globals::{INIT, PROJECT_DESC, PROJECT_NAME};
 use terminal_banner::Banner;
 use tracing_subscriber::{
-    filter::LevelFilter, fmt::writer::BoxMakeWriter, prelude::*, Layer, Registry,
+    Layer, Registry, filter::LevelFilter, fmt::writer::BoxMakeWriter, prelude::*,
 };
 
 /// Initialize the global tracing subscriber.

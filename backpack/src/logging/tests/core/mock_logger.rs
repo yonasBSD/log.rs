@@ -1,8 +1,8 @@
-use crate::logging::*;
 use crate::logging::tests::common::*;
+use crate::logging::*;
 
-use proptest::prelude::*;
 use insta::assert_snapshot;
+use proptest::prelude::*;
 
 mod format_logger_default_behavior {
     use super::*;
@@ -101,6 +101,9 @@ mod format_logger_default_behavior {
     fn snapshot_ok_output_across_verbosity(verbosity: Verbosity) {
         let logger = MockLogger::new(verbosity);
         let out = logger.ok("snapshot-test");
-        assert_snapshot!(format!("{:?}", (verbosity, out)), &format!("verbosity_{verbosity:?}"));
+        assert_snapshot!(
+            format!("{:?}", (verbosity, out)),
+            &format!("verbosity_{verbosity:?}")
+        );
     }
 }

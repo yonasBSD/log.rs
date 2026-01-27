@@ -1,4 +1,4 @@
 mod core;
 mod enums;
-mod trais;
+mod traits;
 mod utils;

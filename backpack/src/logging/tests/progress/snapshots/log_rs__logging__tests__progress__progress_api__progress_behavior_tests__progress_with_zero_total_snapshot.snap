@@ -2,7 +2,4 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[34m●[0m  ℹ Empty task
-[38;5;8m│[0m  
-[34m●[0m  ℹ Empty task (1/0)
-[38;5;8m│[0m
+

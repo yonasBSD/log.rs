@@ -16,4 +16,18 @@ pub trait RenderBackend {
     fn render_outro(&self, msg: &str) -> anyhow::Result<()>;
     fn render_debug(&self, msg: &str) -> anyhow::Result<()>;
     fn render_trace(&self, msg: &str) -> anyhow::Result<()>;
+
+    /// Render a progress update.
+    ///
+    /// - `label`: human label for the task
+    /// - `current`: current position
+    /// - `total`: optional total (None = unknown)
+    /// - `finished`: true when this is the final update
+    fn render_progress(
+        &self,
+        label: &str,
+        current: u64,
+        total: Option<u64>,
+        finished: bool,
+    ) -> anyhow::Result<()>;
 }

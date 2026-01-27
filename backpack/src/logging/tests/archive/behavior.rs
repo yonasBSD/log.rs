@@ -224,8 +224,7 @@ mod json_format_behavior_tests {
         });
 
         for line in out.lines().filter(|l| !l.trim().is_empty()) {
-            serde_json::from_str::<serde_json::Value>(line)
-                .expect("Expected valid JSON output");
+            serde_json::from_str::<serde_json::Value>(line).expect("Expected valid JSON output");
         }
     }
 
@@ -238,8 +237,7 @@ mod json_format_behavior_tests {
         });
 
         for line in out.lines().filter(|l| !l.trim().is_empty()) {
-            serde_json::from_str::<serde_json::Value>(line)
-                .expect("Expected valid JSON output");
+            serde_json::from_str::<serde_json::Value>(line).expect("Expected valid JSON output");
         }
     }
 
@@ -254,8 +252,7 @@ mod json_format_behavior_tests {
         });
 
         for line in out.lines().filter(|l| !l.trim().is_empty()) {
-            serde_json::from_str::<serde_json::Value>(line)
-                .expect("Expected valid JSON output");
+            serde_json::from_str::<serde_json::Value>(line).expect("Expected valid JSON output");
         }
     }
 

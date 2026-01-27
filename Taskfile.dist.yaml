@@ -87,7 +87,6 @@ tasks:
     cmds:
       - cargo insta test -- --no-capture
       - cargo nextest run --workspace --all-targets --verbose --no-tests=warn --no-capture
-      - env RUST_TEST_THREADS=1 cargo test --test concurrency_loom -- --nocapture
 
   test:docs:rust:
     desc: "Test documentation code"

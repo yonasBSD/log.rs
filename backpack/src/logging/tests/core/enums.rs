@@ -1,5 +1,4 @@
-
-use crate::logging::{*, tests::common::*};
+use crate::logging::{tests::common::*, *};
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -35,4 +34,3 @@ fn verbosity_hierarchy_flags_match() {
     assert!(!trace.is_quiet());
     assert!(trace.is_verbose());
 }
-

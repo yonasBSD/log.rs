@@ -5,6 +5,7 @@ pub enum LogLevel {
     Error,
     Debug,
     Trace,
+    Progress,
 }
 
 impl LogLevel {
@@ -16,6 +17,7 @@ impl LogLevel {
             Self::Error => "error",
             Self::Debug => "debug",
             Self::Trace => "trace",
+            Self::Progress => "progress",
         }
     }
 }

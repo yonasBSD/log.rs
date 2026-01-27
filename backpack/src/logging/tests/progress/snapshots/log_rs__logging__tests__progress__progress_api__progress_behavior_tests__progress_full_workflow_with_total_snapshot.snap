@@ -2,17 +2,4 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[34m●[0m  ℹ Downloading
-[38;5;8m│[0m  
-[34m●[0m  ℹ Downloading (1/5)
-[38;5;8m│[0m  
-[34m●[0m  ℹ Downloading (2/5)
-[38;5;8m│[0m  
-[34m●[0m  ℹ Downloading (3/5)
-[38;5;8m│[0m  
-[34m●[0m  ℹ Downloading (5/5)
-[38;5;8m│[0m  
-[34m●[0m  ℹ Download complete
-[38;5;8m│[0m  
-[34m●[0m  ℹ done
-[38;5;8m│[0m
+

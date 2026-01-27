@@ -2,21 +2,4 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[34m●[0m  ℹ Task A
-[38;5;8m│[0m  
-[34m●[0m  ℹ Task B
-[38;5;8m│[0m  
-[34m●[0m  ℹ Task A
-[38;5;8m│[0m  
-[34m●[0m  ℹ Task B
-[38;5;8m│[0m  
-[34m●[0m  ℹ Task A
-[38;5;8m│[0m  
-[34m●[0m  ℹ A done
-[38;5;8m│[0m  
-[34m●[0m  ℹ done
-[38;5;8m│[0m  
-[34m●[0m  ℹ B done
-[38;5;8m│[0m  
-[34m●[0m  ℹ done
-[38;5;8m│[0m
+

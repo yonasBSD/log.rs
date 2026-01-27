@@ -1,8 +1,8 @@
-use crate::logging::{GlobalLogger, LogEvent, globals, logger};
+use crate::logging::{globals, logger, GlobalLogger, LogEvent, LogLevel};
 use globals::{INIT, PROJECT_DESC, PROJECT_NAME};
 use terminal_banner::Banner;
 use tracing_subscriber::{
-    Layer, Registry, filter::LevelFilter, fmt::writer::BoxMakeWriter, prelude::*,
+    filter::LevelFilter, fmt::writer::BoxMakeWriter, prelude::*, Layer, Registry,
 };
 
 /// Initialize the global tracing subscriber.
@@ -46,45 +46,45 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn ok(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().ok_event(msg)
+    LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
 pub fn warn(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().warn_event(msg)
+    LogEvent::new(logger(), LogLevel::Warn, msg)
 }
 
 pub fn err(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().err_event(msg)
+    LogEvent::new(logger(), LogLevel::Error, msg)
 }
 
 pub fn info(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().info_event(msg)
+    LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
 pub fn dim(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().dim_event(msg)
+    LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
 pub fn intro(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().intro_event(msg)
+    LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
 pub fn outro(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().outro_event(msg)
+    LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
 pub fn done() -> LogEvent<'static, GlobalLogger> {
-    logger().done_event()
+    LogEvent::new(logger(), LogLevel::Info, "done")
 }
 
 pub fn step(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().step_event(msg)
+    LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
 pub fn debug(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().debug_event(msg)
+    LogEvent::new(logger(), LogLevel::Debug, msg)
 }
 
 pub fn trace(msg: &str) -> LogEvent<'static, GlobalLogger> {
-    logger().trace_event(msg)
+    LogEvent::new(logger(), LogLevel::Trace, msg)
 }

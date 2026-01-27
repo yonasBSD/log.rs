@@ -2,9 +2,7 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[38;5;8m┌[0m  → Download: file-123.txt [50MB]
-[38;5;8m│[0m
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m78[0m[2m:[0m → Download: file-123.txt [50MB]
-[32m◇[0m  ⠿ Download: file-123.txt [50MB]: 1
+[34m●[0m  ℹ Download: file-123.txt [50MB]
 [38;5;8m│[0m  
-[32m INFO[0m [2mbackpack/src/logging/printers/mod.rs[0m[2m:[0m[2m180[0m[2m:[0m ⠿ Download: file-123.txt [50MB]: 1
+[34m●[0m  ℹ Download: file-123.txt [50MB]
+[38;5;8m│[0m

@@ -1,4 +1,3 @@
-
 use crate::logging::*;
 use insta::assert_snapshot;
 
@@ -34,4 +33,3 @@ fn simple_logger_step_contains_message() {
     let step = logger.step_raw("Processing item");
     assert!(step.contains("Processing item"));
 }
-

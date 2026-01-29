@@ -1,6 +1,5 @@
-
-use crate::logging::*;
 use crate::logging::tests::common::*;
+use crate::logging::*;
 
 use insta::assert_snapshot;
 
@@ -51,4 +50,3 @@ mod nested_span_tests {
         assert_snapshot!(out);
     }
 }
-

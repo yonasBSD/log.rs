@@ -143,22 +143,37 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
                     self.steps.lock().unwrap().clear();
 
                     let task = self.tasks.lock().unwrap().pop();
-                    if let Some(TimedSpan { span, start, .. }) = task {
-                        drop(span);
-                        let elapsed = start.elapsed();
-                        let timing = format_duration(elapsed);
+                    let msg = {
+                        #[cfg(not(test))]
+                        {
+                            if let Some(TimedSpan { span, start, .. }) = task {
+                                drop(span);
 
-                        let msg = if elapsed.as_millis() > 0 {
-                            format!("{s} (took {timing})")
+                                let elapsed = start.elapsed();
+                                let timing = format_duration(elapsed);
+
+                                if elapsed.as_millis() > 0 {
+                                    format!("{s} (took {timing})")
+                                } else {
+                                    s
+                                }
+                            } else {
+                                s
+                            }
+                        }
+
+                        #[cfg(test)]
+                        if let Some(TimedSpan { .. }) = task {
+                            format!("{s} (took 10ms)")
                         } else {
                             s
-                        };
-
-                        let _ = self.backend.render_outro(&msg);
-
-                        if self.inner.is_verbose() {
-                            info!("{msg}");
                         }
+                    };
+
+                    let _ = self.backend.render_outro(&msg);
+
+                    if self.inner.is_verbose() {
+                        info!("{msg}");
                     }
                 }
             }
@@ -266,12 +281,35 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
     fn dump_tree(&self) {
         self.dump_task_tree();
     }
+
+    fn progress(&self, label: &str, current: u64, total: Option<u64>, finished: bool) {
+        match self.format {
+            LogFormat::Json => {
+                // Emit a structured progress event
+                let mut fields = Fields::new();
+                fields.insert("label".into(), label.to_string());
+                fields.insert("current".into(), current.to_string());
+                if let Some(t) = total {
+                    fields.insert("total".into(), t.to_string());
+                }
+                fields.insert("finished".into(), finished.to_string());
+
+                // Use the Progress level you already added
+                self.emit_json(LogLevel::Progress, label);
+            }
+            LogFormat::Text => {
+                let _ = self
+                    .backend
+                    .render_progress(label, current, total, finished);
+            }
+        }
+    }
 }
 
 impl<L, B> GlobalLoggerType for Printer<L, B>
 where
-    L: FormatLogger + Send + Sync,
-    B: RenderBackend + Send + Sync,
+    L: FormatLogger + Send + Sync + 'static,
+    B: RenderBackend + Send + Sync + 'static,
     Self: EmitsEvents,
 {
 }

@@ -1,5 +1,5 @@
-use crate::logging::*;
 use crate::logging::tests::common::*;
+use crate::logging::*;
 
 use insta::assert_snapshot;
 
@@ -139,8 +139,12 @@ mod structured_fields_tests {
         });
 
         let trace_logger = MockLogger::new(Verbosity::Trace);
-        let trace_printer =
-            Printer::new(trace_logger, SimpleBackend, LogFormat::Text, Verbosity::Trace);
+        let trace_printer = Printer::new(
+            trace_logger,
+            SimpleBackend,
+            LogFormat::Text,
+            Verbosity::Trace,
+        );
 
         let trace_out = capture_stderr(|| {
             trace_printer
@@ -187,12 +191,20 @@ mod structured_fields_tests {
     #[test]
     fn text_and_json_modes_both_handle_fields_snapshot() {
         let logger_text = MockLogger::new(Verbosity::Normal);
-        let printer_text =
-            Printer::new(logger_text, SimpleBackend, LogFormat::Text, Verbosity::Normal);
+        let printer_text = Printer::new(
+            logger_text,
+            SimpleBackend,
+            LogFormat::Text,
+            Verbosity::Normal,
+        );
 
         let logger_json = MockLogger::new(Verbosity::Normal);
-        let printer_json =
-            Printer::new(logger_json, SimpleBackend, LogFormat::Json, Verbosity::Normal);
+        let printer_json = Printer::new(
+            logger_json,
+            SimpleBackend,
+            LogFormat::Json,
+            Verbosity::Normal,
+        );
 
         let text_out = capture_stdout(|| {
             printer_text
@@ -240,4 +252,3 @@ mod structured_fields_tests {
         assert_snapshot!(out);
     }
 }
-

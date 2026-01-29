@@ -1,4 +1,3 @@
-
 use crate::logging::*;
 use loom::model;
 
@@ -9,7 +8,7 @@ fn loom_model_global_logger_set_and_use() {
     model(|| {
         let printer = Printer::new(
             ModernLogger,
-            ModernBackend,
+            ModernBackend::new(),
             LogFormat::Text,
             Verbosity::Normal,
         );

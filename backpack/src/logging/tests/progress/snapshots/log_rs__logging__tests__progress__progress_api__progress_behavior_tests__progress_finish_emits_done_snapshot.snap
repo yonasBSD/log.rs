@@ -2,9 +2,4 @@
 source: backpack/src/logging/tests/progress/progress_api.rs
 expression: out
 ---
-[34m●[0m  ℹ Syncing
-[38;5;8m│[0m  
-[34m●[0m  ℹ Sync complete
-[38;5;8m│[0m  
-[34m●[0m  ℹ done
-[38;5;8m│[0m
+

@@ -90,6 +90,9 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
                     let _ = self.backend.render_trace(&s);
                 }
             }
+            LogLevel::Progress => {
+                println!("{}", formatted_msg);
+            }
         }
     }
 

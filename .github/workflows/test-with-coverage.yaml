@@ -74,7 +74,7 @@ jobs:
       # Cache target directory seperately to prevent cache invalidation of
       # ~/.cargo when target changes
       #- name: Cache target directory
-      #  uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+ # v5.0.2
       #  env:
       #    cache-name: cache-dependencies
       #  with:
@@ -100,7 +100,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           run: |
-            cargo test ${CARGO_OPTIONS:+$CARGO_OPTIONS} -- --no-capture -Z unstable-options --format json | cargo2junit > results.xml;
+            cargo test ${CARGO_OPTIONS:+$CARGO_OPTIONS} -- -Z unstable-options --format json | cargo2junit > results.xml;
             cargo llvm-cov --all-features --workspace --codecov --output-path ./codecov.json
 
       - name: Upload test results

@@ -26,8 +26,8 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
 
     let registry = Registry::default().with(telemetry_fmt.with_filter(LevelFilter::TRACE));
 
-    #[cfg(feature = "tokio-console")]
-    let registry = registry.with(console_subscriber::spawn());
+    //#[cfg(feature = "tokio-console")]
+    //let registry = registry.with(console_subscriber::spawn());
 
     tracing::subscriber::set_global_default(registry)?;
 

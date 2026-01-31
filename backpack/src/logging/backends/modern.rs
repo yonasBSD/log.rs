@@ -7,8 +7,15 @@ pub struct ModernBackend {
     bar: std::sync::Mutex<Option<cliclack::ProgressBar>>,
 }
 
+impl Default for ModernBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModernBackend {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             bar: Mutex::new(None),
         }

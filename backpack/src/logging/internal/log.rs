@@ -45,46 +45,57 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[must_use]
 pub fn ok(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
+#[must_use]
 pub fn warn(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Warn, msg)
 }
 
+#[must_use]
 pub fn err(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Error, msg)
 }
 
+#[must_use]
 pub fn info(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
+#[must_use]
 pub fn dim(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
+#[must_use]
 pub fn intro(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
+#[must_use]
 pub fn outro(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
+#[must_use]
 pub fn done() -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, "done")
 }
 
+#[must_use]
 pub fn step(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Info, msg)
 }
 
+#[must_use]
 pub fn debug(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Debug, msg)
 }
 
+#[must_use]
 pub fn trace(msg: &str) -> LogEvent<'static, GlobalLogger> {
     LogEvent::new(logger(), LogLevel::Trace, msg)
 }

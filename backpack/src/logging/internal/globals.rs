@@ -28,6 +28,7 @@ where
     }
 }
 
+#[must_use]
 pub fn logger() -> &'static dyn GlobalLoggerType {
     unsafe { LOGGER.expect("Logger not initialized") }
 }

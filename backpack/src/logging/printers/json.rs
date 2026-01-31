@@ -1,4 +1,6 @@
-use crate::logging::*;
+use crate::logging::{
+    EmitsEvents, Fields, FormatLogger, LogEvent, LogLevel, Printer, RenderBackend, TimestampMode,
+};
 use crate::{LogFormat, Verbosity};
 
 // -----------------------------------------------------------------------------
@@ -53,10 +55,10 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
         {
             let fields_str = f
                 .iter()
-                .map(|(k, v)| format!("\x1b[2m{}={}\x1b[0m", k, v)) // dim style
+                .map(|(k, v)| format!("\x1b[2m{k}={v}\x1b[0m")) // dim style
                 .collect::<Vec<_>>()
                 .join(" ");
-            format!("{} {}", msg, fields_str)
+            format!("{msg} {fields_str}")
         } else {
             msg.to_string()
         };
@@ -91,7 +93,7 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
                 }
             }
             LogLevel::Progress => {
-                println!("{}", formatted_msg);
+                println!("{formatted_msg}");
             }
         }
     }
@@ -183,11 +185,11 @@ impl<L: FormatLogger, B: RenderBackend> Printer<L, B> {
         LogEvent::new(self, LogLevel::Trace, msg)
     }
 
-    pub fn done_event<'a>(&'a self) -> LogEvent<'a, Self> {
+    pub fn done_event(&self) -> LogEvent<'_, Self> {
         LogEvent::new(self, LogLevel::Trace, "")
     }
 
-    pub fn dump_tree_event<'a>(&'a self) -> LogEvent<'a, Self> {
+    pub fn dump_tree_event(&self) -> LogEvent<'_, Self> {
         LogEvent::new(self, LogLevel::Debug, "")
     }
 }

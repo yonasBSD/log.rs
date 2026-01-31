@@ -10,9 +10,10 @@ pub struct Progress {
 
 impl Progress {
     /// Create a progress handle without a known total.
+    #[must_use]
     pub fn new(label: &str) -> Self {
         // Keep the intro semantics you already had
-        crate::logging::intro(label);
+        let _ = crate::logging::intro(label);
 
         Self {
             label: label.to_string(),
@@ -23,8 +24,9 @@ impl Progress {
     }
 
     /// Create a progress handle with a known total.
+    #[must_use]
     pub fn with_total(label: &str, total: u64) -> Self {
-        crate::logging::intro(label);
+        let _ = crate::logging::intro(label);
 
         Self {
             label: label.to_string(),
@@ -40,13 +42,13 @@ impl Progress {
         self.total = Some(total);
 
         // Semantic progress event; backend decides how to render
-        let _ = L.progress(&self.label, self.current, self.total, false);
+        let () = L.progress(&self.label, self.current, self.total, false);
     }
 
     /// Increment progress by 1 and emit an update.
     pub fn tick(&mut self) {
         self.current += 1;
-        let _ = L.progress(&self.label, self.current, self.total, false);
+        let () = L.progress(&self.label, self.current, self.total, false);
     }
 
     /// Finish the progress with a final message.
@@ -58,11 +60,11 @@ impl Progress {
         }
 
         // Final progress event, marked as finished
-        let _ = L.progress(msg, self.current, self.total, true);
+        let () = L.progress(msg, self.current, self.total, true);
 
         // Preserve your existing outro/done semantics for non-progress-aware backends
-        crate::logging::outro(msg);
-        crate::logging::done();
+        let _ = crate::logging::outro(msg);
+        let _ = crate::logging::done();
 
         self.finished = true;
     }

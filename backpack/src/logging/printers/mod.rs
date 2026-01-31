@@ -1,4 +1,10 @@
-use crate::{LogFormat, Verbosity, logging::*};
+use crate::{
+    LogFormat, Verbosity,
+    logging::{
+        EmitsEvents, FormatLogger, GlobalLoggerType, LogLevel, RenderBackend, ScreenLogger,
+        TimestampMode, format_duration,
+    },
+};
 use std::{sync::Mutex, time::Instant};
 use tracing::{Level, debug, error, info, span, span::Span, trace, warn};
 
@@ -286,6 +292,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
         match self.format {
             LogFormat::Json => {
                 // Emit a structured progress event
+                /*
                 let mut fields = Fields::new();
                 fields.insert("label".into(), label.to_string());
                 fields.insert("current".into(), current.to_string());
@@ -293,6 +300,7 @@ impl<L: FormatLogger, B: RenderBackend> ScreenLogger for Printer<L, B> {
                     fields.insert("total".into(), t.to_string());
                 }
                 fields.insert("finished".into(), finished.to_string());
+                */
 
                 // Use the Progress level you already added
                 self.emit_json(LogLevel::Progress, label);

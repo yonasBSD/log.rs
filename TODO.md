@@ -1,6 +1,7 @@
 # TODO
 
 ## Features
+- Use [log](https://github.com/rust-lang/log)
 - OpenTelemetry
   - opentelemetry-otlp
   - logs (Loki), metrics (Prometheus), and traces (Jaeger)
@@ -62,7 +63,7 @@ Add helm chart.
 ### Architecture
 - OS
   - Linux
-    - Ubuntu / Debian 
+    - Ubuntu / Debian
     - Alpine
     - OpenSUSE
     - Fedora / Rocky

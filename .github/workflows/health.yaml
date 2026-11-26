@@ -69,7 +69,7 @@ jobs:
         with:
           toolchain: nightly
       - name: Check for Unused Dependencies
-        uses: bnjbvr/cargo-machete@7959c845782fed02ee69303126d4a12d64f1db18 # v0.9.1
+        uses: bnjbvr/cargo-machete@431e75731b681a69a4cfdeb1315b505778bb5c70 # v0.10.1
         with:
           summary: true
 
